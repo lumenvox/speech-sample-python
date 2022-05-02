@@ -1,0 +1,15 @@
+
+# IntelliJ project files
+.idea
+*.iml
+out
+gen
+venv/
+__pycache__/
+
+# Generated proto stub files
+/lumenvox
+
+# Possible certificates
+*.crt
+*.pem

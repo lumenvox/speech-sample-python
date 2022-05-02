@@ -1,0 +1,76 @@
+<?xml version='1.0'?>
+
+<!-- **************************************************************************************** -->
+<!-- This is a special grammar used to switch decode modes to tone detection mode             -->
+<!-- **************************************************************************************** -->
+
+<grammar xml:lang="en-US" version="1.0" root="root" mode="voice"
+         xmlns="http://www.w3.org/2001/06/grammar"
+         tag-format="semantics/1.0.2006"> 
+
+	<!-- ******************************************************************************** -->
+	<!-- This value changes the detection mode to tone detection mode                     -->
+	<!-- ******************************************************************************** -->
+	<meta name="STREAM|DETECTION_MODE"      content="Tone"/>
+
+
+	<!-- ******************************************************************************** -->
+	<!-- Activate/Deactivate AMD, FAX, SIT, BUSY detection                                      -->
+	<!-- ******************************************************************************** -->
+	<meta name="AMD_CUSTOM_ENABLE"          content="true"/>
+	<meta name="FAX_CUSTOM_ENABLE"          content="true"/>
+	<meta name="SIT_CUSTOM_ENABLE"          content="true"/>
+	<meta name="BUSY_CUSTOM_ENABLE"         content="false"/>
+	
+	
+	<!-- ******************************************************************************** -->
+	<!-- These values may be changed to modify the semantic interpretations returned      -->
+	<!-- ******************************************************************************** -->
+
+	<!-- 
+		The below meta tags map each state (AMD/FAX/SIT) to an input text in the SRGS 
+		grammar below. This is the mechanism used to map each of the states to an input 
+		text in the grammar.
+		***************************************************************************** -->
+
+	
+	<meta name="AMD_CUSTOM_INPUT_TEXT"                      content="BEEP"/>
+	<meta name="FAX_CUSTOM_INPUT_TEXT"                      content="FAX"/>
+	<meta name="BUSY_CUSTOM_INPUT_TEXT"                     content="BUSY"/>
+
+	<meta name="SIT_REORDER_LOCAL_CUSTOM_INPUT_TEXT"        content="SIT REORDER LOCAL"/>
+	<meta name="SIT_VACANT_CODE_CUSTOM_INPUT_TEXT"          content="SIT VACANT CODE"/>
+	<meta name="SIT_NO_CIRCUIT_LOCAL_CUSTOM_INPUT_TEXT"     content="SIT NO CIRCUIT LOCAL"/>
+	<meta name="SIT_INTERCEPT_CUSTOM_INPUT_TEXT"            content="SIT INTERCEPT"/>
+	<meta name="SIT_REORDER_DISTANT_CUSTOM_INPUT_TEXT"      content="SIT REORDER DISTANT"/>
+	<meta name="SIT_NO_CIRCUIT_DISTANT_CUSTOM_INPUT_TEXT"   content="SIT NO CIRCUIT DISTANT"/>
+	<meta name="SIT_OTHER_CUSTOM_INPUT_TEXT"                content="SIT OTHER"/>
+	
+
+	
+	<!-- 
+		Below is the SRGS grammar. If the input text is changed in any of them, the 
+		appropriate changes need to be made to the above states to input text mapping. 
+		The semantic interpretation can be changed as necessary by modifying the out  
+		tags below.
+		***************************************************************************** -->
+	
+	<rule id="root" scope="public">
+		<one-of>
+			<item>BEEP<tag>out="BEEP"</tag></item>
+			<item>FAX<tag>out="FAX"</tag></item>
+			<item>BUSY<tag>out="BUSY"</tag></item>
+			<item>SPEECH<tag>out="SPEECH"</tag></item>
+			
+			<item>SIT REORDER LOCAL<tag>out="SIT"</tag></item>
+			<item>SIT VACANT CODE<tag>out="SIT"</tag></item>
+			<item>SIT NO CIRCUIT LOCAL<tag>out="SIT"</tag></item>
+			<item>SIT INTERCEPT<tag>out="SIT"</tag></item>
+			<item>SIT REORDER DISTANT<tag>out="SIT"</tag></item>
+			<item>SIT NO CIRCUIT DISTANT<tag>out="SIT"</tag></item>
+			<item>SIT OTHER<tag>out="SIT"</tag></item>
+			
+		</one-of>
+	</rule>
+	
+</grammar>
