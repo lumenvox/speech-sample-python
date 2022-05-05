@@ -261,7 +261,7 @@ class LumenVoxSpeechApiHelper:
         """
         self.result_ready = False
         retry_count: int = 1
-        while not self.result_ready and retry_count < num_iterations:
+        while retry_count < num_iterations:
             self.result_ready = self.InteractionRequestResults(session_id, interaction_id)
             if self.result_ready:
                 # Note additional check here - we might have a partial result before the final result in queue
