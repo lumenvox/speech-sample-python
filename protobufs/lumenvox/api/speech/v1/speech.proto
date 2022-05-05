@@ -579,6 +579,14 @@ message VADMessage {
     // If the setting InteractionASR_VoiceActivityDetection.AUTO_FINALIZE_ON_EOS
     // is true, the ASR will immediately finish processing audio at this point
     VAD_MESSAGE_EVENT_TYPE_END_OF_SPEECH = 3;
+
+    // VAD timed out waiting for audio barge-in. The audio manager will no
+    // longer process audio on this interaction.
+    VAD_MESSAGE_EVENT_TYPE_BARGE_IN_TIMEOUT = 4;
+    
+    // VAD timed out waiting for audio barge-out. The audio manager will no
+    // longer process audio on this interaction.
+    VAD_MESSAGE_EVENT_TYPE_END_OF_SPEECH_TIMEOUT = 5;
   }
 
   // The type of event this message represents
