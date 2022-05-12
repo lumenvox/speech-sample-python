@@ -18,7 +18,7 @@
 			<item>SIX<tag>out="6";</tag></item>
 			<item>SEVEN<tag>out="7";</tag></item>
 			<item>EIGHT<tag>out="8";</tag></item>
-			<item>NONE<tag>out="9";</tag></item>
+			<item>NINE<tag>out="9";</tag></item>
 		</one-of>
 	</rule>
 
