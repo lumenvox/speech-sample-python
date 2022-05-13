@@ -277,7 +277,7 @@ example, or it could be used in batch-mode operations similar to
 how the Batch Mode ASR example is used. This batch-mode is sometimes
 called offline transcription mode may be slightly more efficient
 and faster than realtime streaming, but requires all the audio
-be sent at once, so may or may not be suitable for you use case.
+be sent at once, so may or may not be suitable for your use case.
 
 ## Text To Speech Example
 
