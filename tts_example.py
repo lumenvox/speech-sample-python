@@ -12,7 +12,7 @@ def tts_common(api_helper, text=None, ssml_url=None, voice=None,
     This function will request a TTS synthesis using the specified parameters
     """
 
-    session_id = api_helper.SessionCreate()
+    session_id = api_helper.SessionCreate('STANDARD_AUDIO_FORMAT_NO_AUDIO_RESOURCE')
     print('1. session_id from SessionCreate: ', session_id)
 
     if text:
@@ -27,7 +27,7 @@ def tts_common(api_helper, text=None, ssml_url=None, voice=None,
     api_helper.InteractionBeginProcessing(session_id=session_id, interaction_id=interaction_id)
 
     # Wait until we receive the final results callback
-    api_helper.wait_for_final_results(session_id=session_id, interaction_id=interaction_id)
+    api_helper.wait_for_final_results(session_id=session_id, interaction_id=interaction_id, wait_time=3.5)
 
     api_helper.InteractionRequestResults(session_id=session_id, interaction_id=interaction_id)
 
@@ -38,16 +38,19 @@ def tts_common(api_helper, text=None, ssml_url=None, voice=None,
         for warning in parsed_json['synth_warnings']:
             print('Synth warning reported: ', warning)
 
-    print("SSML marks synthesized: ", len(parsed_json['synth_ssml_mark_offset']))
-    for entry in parsed_json['synth_ssml_mark_offset']:
+    print(f"PARSED JSON: \n{json.dumps(parsed_json, indent=4)}")
+
+    print("SSML marks synthesized: ", len(parsed_json['synth_ssml_mark_offsets']))
+    for entry in parsed_json['synth_ssml_mark_offsets']:
         print(" - mark Name: [", entry['name'], "] at offset:", entry['offset'])
 
-    print("Words synthesized: ", len(parsed_json['synth_word_sample_offset']))
-    print("Sentences synthesized: ", len(parsed_json['synth_sentence_sample_offset']))
-    print("Voice used: ", parsed_json['synth_voice_sample_offset'][0]['name'])
+    if 'synth_word_sample_offsets' in parsed_json:
+        print("Words synthesized: ", len(parsed_json['synth_word_sample_offsets']))
+        print("Sentences synthesized: ", len(parsed_json['synth_sentence_sample_offsets']))
+        print("Voice used: ", parsed_json['synth_voice_sample_offsets'][0]['name'])
 
     audio_id = parsed_json["audio_id"]
-    audio_data_len, audio_data = api_helper.AudioStreamPull(session_id=session_id, interaction_id=audio_id)
+    audio_data_len, audio_data = api_helper.AudioPull(session_id=session_id, interaction_id=audio_id)
 
     output_filepath = None
     if save_audio_file:
@@ -72,7 +75,7 @@ if __name__ == '__main__':
     api_helper.initialize_speech_api_helper()
 
     # Set to True to save the generated synthesized audio file
-    save_audio_file=False
+    save_audio_file = False
 
     ssml_text = api_helper.get_ssml_file_by_ref('test_data/mark_element.ssml')
     audio_data_len, output_filepath = tts_common(api_helper=api_helper,

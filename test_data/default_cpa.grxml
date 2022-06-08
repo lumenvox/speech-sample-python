@@ -17,7 +17,7 @@
 	<!-- ******************************************************************************** -->
 	<meta name="STREAM|CPA_HUMAN_RESIDENCE_TIME"  content="1800"/>
 	<meta name="STREAM|CPA_HUMAN_BUSINESS_TIME"  content="3000"/>
-	<meta name="STREAM|CPA_UNKNOWN_SILENCE_TIMEOUT" content="3500"/>
+	<meta name="STREAM|CPA_UNKNOWN_SILENCE_TIMEOUT" content="5000"/>
 	<!-- ******************************************************************************** -->
 	<!-- These values may be changed to modify the semantic interpretations returned      -->
 	<!-- ******************************************************************************** --> 

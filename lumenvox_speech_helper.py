@@ -33,6 +33,12 @@ class CallbackQueues:
         self.partial_result_queue = queue.SimpleQueue()
 
 
+class NotificationEvents:
+    def __init__(self):
+        self.result_event = threading.Event()
+        self.partial_result_event = threading.Event()
+
+
 class ResponseHandler:
     def __init__(self, session_callback_stream):
         self.session_callback_stream = session_callback_stream
@@ -70,7 +76,8 @@ class AudioStreamBuffer:
 
 class LumenVoxSpeechApiHelper:
 
-    queue_map = {}  # Map of session_id to queue
+    queue_map = {}  # Map of session_id to queues
+    event_map = {}  # Map of session_id to events
     executor = None
     response_handler_queue = queue.SimpleQueue()  # Queue of callback ResponseHandler objects
     cancel_event = None
@@ -131,6 +138,38 @@ class LumenVoxSpeechApiHelper:
         new_response_handler.callback_loop.run_in_executor(self.executor, self.response_handler, session_callback_stream, self.cancel_event)
         self.response_handler_queue.put(new_response_handler)
 
+    def audio_streamer(self, session_id, audio_streaming_buffer, cancel_event):
+        """
+        Returns an iterator which can be used to stream the given audio.
+
+        :param session_id: The session id, sent as the first message in the iterator.
+        :param audio_streaming_buffer: The buffer object containing the audio to be streamed.
+        :param cancel_event: Threading event which can be used to cancel the stream early.
+        """
+        # The first message in the stream should be the session id. After sending this, continue to the data.
+        yield speech_api.AudioStreamRequest(**{"session_id": session_id})
+
+        chunk_counter = 0
+        while True:
+            time.sleep(0.1)
+            if cancel_event.is_set():
+                break
+            data = audio_streaming_buffer.get_next_chunk()
+            if data is None:
+                # End of file reached - end the stream
+                break
+            else:
+                chunk_counter += 1
+                print(f"sending audio chunk {chunk_counter}")
+                yield speech_api.AudioStreamRequest(**{"audio_data": data})
+
+    def stream_audio(self, session_id, audio_streaming_buffer, cancel_event):
+        # Create iterator for streaming the audio
+        streamer = self.audio_streamer(session_id, audio_streaming_buffer, cancel_event)
+
+        # Stream the audio
+        self.stub.AudioStream(streamer, metadata=self.get_header())
+
     @staticmethod
     def get_header(deployment_id=DEPLOYMENT_ID,
                    operator_id=OPERATOR_ID) -> tuple:
@@ -150,23 +189,25 @@ class LumenVoxSpeechApiHelper:
                     print('>> session_id in response_handler: ', response.session_id)
                     self.session_id_queue.put(response.session_id)
 
-                elif callback_type == "vad":
+                elif callback_type == "vad_event":
                     print('>> VAD CALLBACK in response_handler')
-                    session_id_from_response = response.vad.session_id
+                    session_id_from_response = response.vad_event.session_id
                     if session_id_from_response in self.queue_map:
-                        self.queue_map[session_id_from_response].vad_queue.put(response.vad)
+                        self.queue_map[session_id_from_response].vad_queue.put(response.vad_event)
 
-                elif callback_type == "result":
+                elif callback_type == "final_result":
                     print('>> RESULT CALLBACK in response_handler')
-                    session_id_from_response = response.result.session_id
+                    session_id_from_response = response.final_result.session_id
                     if session_id_from_response in self.queue_map:
-                        self.queue_map[session_id_from_response].result_queue.put(response.result)
+                        self.queue_map[session_id_from_response].result_queue.put(response.final_result)
+                        self.event_map[session_id_from_response].result_event.set()
 
                 elif callback_type == "partial_result":
                     print('>> PARTIAL RESULT CALLBACK in response_handler')
                     session_id_from_response = response.partial_result.session_id
                     if session_id_from_response in self.queue_map:
                         self.queue_map[session_id_from_response].partial_result_queue.put(response.partial_result)
+                        self.event_map[session_id_from_response].partial_result_event.set()
                 else:
                     raise RuntimeError(
                         "Received SessionCreateResponse without expected type"
@@ -220,14 +261,20 @@ class LumenVoxSpeechApiHelper:
 
     # ----------------------------------
 
-    def SessionCreate(self) -> typing.Union[str, None]:
+    def SessionCreate(self, audio_format=None) -> typing.Union[str, None]:
         """
         Call SessionStart return valid session_id (uuid)
         """
         metadata = self.get_header()
 
+        params = {
+            "audio_format": {
+                "standard_audio_format": audio_format
+            }
+        }
+
         # Create session and a reference to the stream object returned (which will receive callbacks)
-        session_callback_stream = self.stub.SessionCreate(speech_api.SessionCreateRequest(), metadata=metadata)
+        session_callback_stream = self.stub.SessionCreate(speech_api.SessionCreateRequest(**params), metadata=metadata)
 
         # Add the new session_callback_stream to a ResponseHandler and start a loop listening to it
         self.add_to_callback_loop(session_callback_stream=session_callback_stream)
@@ -236,6 +283,7 @@ class LumenVoxSpeechApiHelper:
         session_id = self.session_id_queue.get(timeout=2)
 
         self.queue_map[session_id] = CallbackQueues()
+        self.event_map[session_id] = NotificationEvents()
         return session_id
 
     def SessionClose(self, session_id) -> None:
@@ -250,49 +298,74 @@ class LumenVoxSpeechApiHelper:
         }
         self.stub.SessionClose(speech_api.SessionCloseRequest(**params), metadata=self.get_header())
 
-    def wait_for_final_results(self, interaction_id, session_id, num_iterations=10) -> bool:
+    def reset_result_event(self, session_id) -> None:
+        """
+        Resets the result_event for the specified session_id, allowing multiple results per session to be handled
+
+        :param session_id: session_id of result_event to reset
+        :return: None
+        """
+        self.event_map[session_id].result_event.clear()
+
+    def wait_for_final_results(self, session_id, interaction_id, wait_time=3.5) -> bool:
         """
         Helper used to wait for a final results callback
 
         :param interaction_id: expected interaction_id
         :param session_id: expected session_id
-        :param num_iterations: number of 200ms iterations to wait
-        :return: True if callback received within specified timeout period
+        :param wait_time: number of seconds to wait for final_result event
+        :return: True if final_result event received within specified timeout period
         """
         self.result_ready = False
-        retry_count: int = 1
-        while retry_count < num_iterations:
-            self.result_ready = self.InteractionRequestResults(session_id, interaction_id)
-            if self.result_ready:
-                # Note additional check here - we might have a partial result before the final result in queue
-                if hasattr(self.results_response, 'results_json') and \
-                        'final_results' in self.results_response.results_json:
-                    break
-                else:
-                    print("Ignoring partial results while waiting for final_results")
-            # print("Retry ", retry_count, " of ", num_iterations, " - result_ready = ", str(self.result_ready))
-            time.sleep(0.2)  # Sleep for 200ms and then try again
-            retry_count += 1
+
+        if self.event_map[session_id].result_event.wait(wait_time):
+            if interaction_id:
+                self.result_ready = self.InteractionRequestResults(session_id, interaction_id)
+            else:
+                return True
+
         return self.result_ready
 
-    def AudioStreamCreate(self, session_id, audio_format=None) -> None:
+    def reset_partial_result_event(self, session_id) -> None:
+        """
+        Resets the partial_result_event for the specified session_id, allowing multiple results per session to be
+        handled
+
+        :param session_id: session_id of partial_result_event to reset
+        :return: None
+        """
+        self.event_map[session_id].partial_result_event.clear()
+
+    def wait_for_partial_results(self, session_id, interaction_id, wait_time=5) -> bool:
+        """
+        Helper used to wait for a partial results callback
+
+        :param interaction_id: expected interaction_id
+        :param session_id: expected session_id
+        :param wait_time: number of seconds to wait for partial_result event
+        :return: True if partial_result event received within specified timeout period
+        """
+        self.result_ready = False
+
+        if self.event_map[session_id].partial_result_event.wait(wait_time):
+            self.result_ready = self.InteractionRequestResults(session_id, interaction_id)
+
+        return self.result_ready
+
+    def AudioStream(self, session_id) -> None:
         """
         Calls AudioStreamCreate passing the specified audio_format to create an inbound audio stream for ASR
 
         :param session_id: target session identifier
-        :param audio_format: the specified audio format for data sent to the new stream
         :return: None
         """
 
         params = {
             "session_id": session_id,
-            "audio_format": {
-                "standard_audio_format": audio_format
-            }
         }
-        self.stub.AudioStreamCreate(speech_api.AudioStreamCreateRequest(**params), metadata=self.get_header())
+        self.stub.AudioStream((yield speech_api.AudioStreamRequest(**params)), metadata=self.get_header())
 
-    def AudioStreamPush(self, session_id, audio_data) -> None:
+    def AudioPush(self, session_id, audio_data) -> None:
         """
         Used to push audio into the API
 
@@ -302,9 +375,13 @@ class LumenVoxSpeechApiHelper:
         """
         params = {
             "session_id": session_id,
-            "stream_data": audio_data
+            "audio_data": audio_data
         }
-        self.stub.AudioStreamPush(speech_api.AudioStreamPushRequest(**params), metadata=self.get_header())
+        self.stub.AudioPush(speech_api.AudioPushRequest(**params), metadata=self.get_header())
+
+    def StartStreaming(self, session_id, audio_streaming_buffer, cancel_event):
+        asyncio.get_event_loop().run_in_executor(self.executor, self.stream_audio, session_id, audio_streaming_buffer,
+                                                 cancel_event)
 
     def AudioStreamingPush(self, session_id, audio_stream_buffer) -> bool:
         """
@@ -326,9 +403,9 @@ class LumenVoxSpeechApiHelper:
         self.stub.AudioStreamPush(speech_api.AudioStreamPushRequest(**params), metadata=self.get_header())
         return True
 
-    def AudioStreamPull(self, interaction_id=None, session_id=None, audio_start=None, audio_length=None) -> typing.Any:
+    def AudioPull(self, interaction_id=None, session_id=None, audio_start=None, audio_length=None) -> typing.Any:
         """
-        Call AudioStreamPull to request audio from the API
+        Call AudioPull to request audio from the API
 
         :param interaction_id: specified audio_id
         :param session_id: related session_id
@@ -345,7 +422,7 @@ class LumenVoxSpeechApiHelper:
         if audio_length is not None:
             params["audio_length"] = audio_length
 
-        response = self.stub.AudioStreamPull(speech_api.AudioStreamPullRequest(**params),
+        response = self.stub.AudioPull(speech_api.AudioPullRequest(**params),
                                              metadata=self.get_header())
 
         audio_data_len = len(response.audio_data)
@@ -675,11 +752,15 @@ class LumenVoxSpeechApiHelper:
                                                                language_code=language_code,
                                                                grammar_url=gram)
 
+            self.reset_result_event(session_id=session_id)
+
             # Tell grammar to start processing...
             self.InteractionBeginProcessing(session_id=session_id, interaction_id=grammar_id)
 
             # Wait for callback indicating grammar loaded
-            grammar_processed_result = self.get_result_callback(session_id=session_id, timeout_value=5)
+            self.wait_for_final_results(session_id=session_id, interaction_id=None, wait_time=3.5)
             grammar_ids.append(grammar_id)
+
+        self.reset_result_event(session_id=session_id)
 
         return grammar_ids

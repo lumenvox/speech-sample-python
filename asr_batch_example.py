@@ -13,21 +13,18 @@ def asr_batch_common(api_helper, audio_file, grammar_file_path=None, grammar_url
     Detection (VAD)
     """
 
-    session_id = api_helper.SessionCreate()
+    session_id = api_helper.SessionCreate(audio_format)
     print('1. session_id from SessionCreate: ', session_id)
 
-    api_helper.AudioStreamCreate(session_id=session_id, audio_format=audio_format)
-    print('2. Called AudioStreamCreate - no response expected')
-
     audio_data_to_push = api_helper.get_audio_file(audio_file_path=audio_file)
-    api_helper.AudioStreamPush(session_id=session_id, audio_data=audio_data_to_push)
-    print('3. Called AudioStreamPush - no response expected')
+    api_helper.AudioPush(session_id=session_id, audio_data=audio_data_to_push)
+    print('2. Called AudioStreamPush - no response expected')
 
     grammar_ids = api_helper.load_grammar_helper(session_id=session_id, language_code=language_code,
                                                  grammar_file_path=grammar_file_path, grammar_url=grammar_url)
 
     interaction_id = api_helper.InteractionCreateASR(session_id=session_id, interaction_ids=grammar_ids)
-    print('4. interaction_id extracted from InteractionCreateASR response is: ', interaction_id)
+    print('3. interaction_id extracted from InteractionCreateASR response is: ', interaction_id)
 
     # add setting for batch decoding.
     interaction_test_json_string = '{"INTERACTION_AUDIO_CONSUME": ' \
@@ -38,12 +35,15 @@ def asr_batch_common(api_helper, audio_file, grammar_file_path=None, grammar_url
     api_helper.InteractionSetSettings(session_id=session_id, interaction_id=interaction_id,
                                       json_settings_string=interaction_test_json_string)
 
+    # Reset the final_result event so that we wait for the decode event (not the grammar events above)
+    api_helper.reset_result_event(session_id=session_id)
+
     print('session id before InteractionBeginProcessing: ', session_id)
     api_helper.InteractionBeginProcessing(session_id=session_id, interaction_id=interaction_id)
-    print('5. called InteractionBeginProcessing for ASR (no response expected) interaction_id: ', interaction_id)
+    print('4. called InteractionBeginProcessing for ASR (no response expected) interaction_id: ', interaction_id)
 
-    api_helper.wait_for_final_results(session_id=session_id, interaction_id=interaction_id)
-    print('6. Final Results ready:', str(api_helper.result_ready))
+    api_helper.wait_for_final_results(session_id=session_id, interaction_id=interaction_id, wait_time=3.5)
+    print('5. Final Results ready:', str(api_helper.result_ready))
 
     if api_helper.result_ready:
         # Only attempt to parse the results_json if results_ready is True (otherwise results_json is not valid)

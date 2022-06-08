@@ -167,7 +167,7 @@ is called. This value is used as a parameter for other API calls.
 
 Since callbacks can be received at any time, it is generally practical
 to use a worker thread to listen for these notifications and process
-then when they arrive. In this sample code, such as worker thread is
+them when they arrive. In this sample code, such a worker thread is
 started within the `LumenVoxSpeechApiHelper` call to `initialize_speech_api_helper`
 and then the listener is activated during `SessionCreate`.
 
