@@ -684,7 +684,7 @@ class LumenVoxSpeechApiHelper:
         :param ssml_file_path: file path reference to SSML
         :return: string containing SSML
         """
-        with open(ssml_file_path, 'r') as file:
+        with open(ssml_file_path, 'r', encoding='utf-8') as file:
             data = file.read()
         return data
 
@@ -713,7 +713,7 @@ class LumenVoxSpeechApiHelper:
         """
         assert os.path.isfile(grammar_file_path), "Referenced grammar file not found!"
 
-        with open(grammar_file_path, 'r') as file:
+        with open(grammar_file_path, 'r', encoding='utf-8') as file:
             data = file.read()
         return data
 

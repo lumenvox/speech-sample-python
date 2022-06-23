@@ -69,7 +69,7 @@ if __name__ == '__main__':
                               audio_format='STANDARD_AUDIO_FORMAT_ULAW_8KHZ',
                               language_code='en')
 
-    print(">>>> result returned:\n", json.dumps(result, indent=4, sort_keys=True))
+    print(">>>> result returned:\n", json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False))
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.

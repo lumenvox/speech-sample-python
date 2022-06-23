@@ -38,7 +38,7 @@ def tts_common(api_helper, text=None, ssml_url=None, voice=None,
         for warning in parsed_json['synth_warnings']:
             print('Synth warning reported: ', warning)
 
-    print(f"PARSED JSON: \n{json.dumps(parsed_json, indent=4)}")
+    print(f"PARSED JSON: \n{json.dumps(parsed_json, indent=4, ensure_ascii=False)}")
 
     print("SSML marks synthesized: ", len(parsed_json['synth_ssml_mark_offsets']))
     for entry in parsed_json['synth_ssml_mark_offsets']:

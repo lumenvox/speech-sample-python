@@ -123,7 +123,7 @@ if __name__ == '__main__':
                                       audio_file='test_data/human_residence.ulaw',
                                       audio_format='STANDARD_AUDIO_FORMAT_ULAW_8KHZ',
                                       language_code='en')
-    print(">>>> CPA result returned:\n", json.dumps(result, indent=4, sort_keys=True))
+    print(">>>> CPA result returned:\n", json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False))
 
     # Should return "FAX" classification
     result = cpa_amd_streaming_common(api_helper=api_helper,
@@ -131,7 +131,7 @@ if __name__ == '__main__':
                                       audio_file='test_data/fax_tone_short.ulaw',
                                       audio_format='STANDARD_AUDIO_FORMAT_ULAW_8KHZ',
                                       language_code='en')
-    print(">>>> AMD result returned:\n", json.dumps(result, indent=4, sort_keys=True))
+    print(">>>> AMD result returned:\n", json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False))
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.

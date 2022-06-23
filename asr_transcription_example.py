@@ -130,7 +130,7 @@ if __name__ == '__main__':
     # results while the audio is being processed in realtime. The final result may contain a corrected version
     # of the partial results, since it may have more context around words and phrases to improve final output.
 
-    print(">>>> result returned:\n", json.dumps(result, indent=4, sort_keys=True))
+    print(">>>> result returned:\n", json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False))
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.
