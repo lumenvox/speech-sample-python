@@ -27,10 +27,12 @@ def asr_batch_common(api_helper, audio_file, grammar_file_path=None, grammar_url
     print('3. interaction_id extracted from InteractionCreateASR response is: ', interaction_id)
 
     # add setting for batch decoding.
-    interaction_test_json_string = '{"INTERACTION_AUDIO_CONSUME": ' \
-                                   '{' \
-                                   '   "AUDIO_CONSUME_MODE": "BATCH", ' \
-                                   '   "AUDIO_CONSUME_START_MODE":"STREAM_BEGIN"} ' \
+    interaction_test_json_string = '{' \
+                                   '    "INTERACTION_AUDIO_CONSUME": ' \
+                                   '    {' \
+                                   '        "AUDIO_CONSUME_MODE": "BATCH", ' \
+                                   '        "AUDIO_CONSUME_START_MODE": "STREAM_BEGIN" ' \
+                                   '    }' \
                                    '}'
     api_helper.InteractionSetSettings(session_id=session_id, interaction_id=interaction_id,
                                       json_settings_string=interaction_test_json_string)

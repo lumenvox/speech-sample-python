@@ -37,6 +37,7 @@ class NotificationEvents:
     def __init__(self):
         self.result_event = threading.Event()
         self.partial_result_event = threading.Event()
+        self.audio_complete_event = threading.Event()
 
 
 class ResponseHandler:
@@ -169,6 +170,9 @@ class LumenVoxSpeechApiHelper:
 
         # Stream the audio
         self.stub.AudioStream(streamer, metadata=self.get_header())
+
+        # Signal that the audio stream has finished sending
+        self.event_map[session_id].audio_complete_event.set()
 
     @staticmethod
     def get_header(deployment_id=DEPLOYMENT_ID,
@@ -351,6 +355,25 @@ class LumenVoxSpeechApiHelper:
             self.result_ready = self.InteractionRequestResults(session_id, interaction_id)
 
         return self.result_ready
+
+    def reset_audio_complete_event(self, session_id) -> None:
+        """
+        Resets the audio_complete_event for specified session_id, allowing multiple streams when needed
+
+        :param session_id: session_id of audio_complete_event to reset
+        :return: None
+        """
+        self.event_map[session_id].audio_complete_event.clear()
+
+    def is_audio_stream_complete(self, session_id) -> bool:
+        """
+        Helper used to determine if audio stream has completed
+
+        :param session_id: expected session_id
+        :return: True if audio_complete_event is set (when audio stream has finished)
+        """
+
+        return self.event_map[session_id].audio_complete_event.is_set()
 
     def AudioStream(self, session_id) -> None:
         """
