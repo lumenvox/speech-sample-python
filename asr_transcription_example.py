@@ -30,10 +30,16 @@ def asr_transcription_common(api_helper, audio_file, grammar_file_path=None, gra
     print('2. interaction_id extracted from InteractionCreateASR response is: ', interaction_id)
 
     # Settings for streaming decodes
-    interaction_test_json_string = '{"INTERACTION_AUDIO_CONSUME": ' \
-                                   '{' \
-                                   '   "AUDIO_CONSUME_MODE": "STREAMING", ' \
-                                   '   "AUDIO_CONSUME_START_MODE":"STREAM_BEGIN"} ' \
+    interaction_test_json_string = '{' \
+                                   '    "INTERACTION_AUDIO_CONSUME": ' \
+                                   '    {' \
+                                   '        "AUDIO_CONSUME_MODE": "STREAMING", ' \
+                                   '        "AUDIO_CONSUME_START_MODE":"STREAM_BEGIN" ' \
+                                   '    }, ' \
+                                   '    "INTERACTION_VAD": ' \
+                                   '    { ' \
+                                   '        "AUTO_FINALIZE_ON_EOS": "true" ' \
+                                   '    } ' \
                                    '}'
     api_helper.InteractionSetSettings(session_id=session_id, interaction_id=interaction_id,
                                       json_settings_string=interaction_test_json_string)
@@ -51,7 +57,7 @@ def asr_transcription_common(api_helper, audio_file, grammar_file_path=None, gra
     api_helper.StartStreaming(session_id=session_id, audio_streaming_buffer=audio_streaming_buffer,
                               cancel_event=audio_stream_cancel)
 
-    while True:
+    while not api_helper.is_audio_stream_complete(session_id):
         # In this loop, we're checking the callback channels to see what's happening with the stream. When we receive
         # results, we can set the audio_stream_cancel event to end the stream (which is happening in another thread).
 
@@ -96,6 +102,9 @@ def asr_transcription_common(api_helper, audio_file, grammar_file_path=None, gra
         time.sleep(0.1)
 
     print('4. Completed streaming audio')
+
+    # Force calling InteractionFinalizeProcessing in case end-of-speech was not detected due to insufficient silence
+    api_helper.InteractionFinalizeProcessing(session_id=session_id, interaction_id=interaction_id)
 
     api_helper.wait_for_final_results(session_id=session_id, interaction_id=interaction_id)
 
