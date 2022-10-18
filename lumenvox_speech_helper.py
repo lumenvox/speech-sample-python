@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import grpc
 import os
 import queue
@@ -6,12 +7,19 @@ import threading
 import time
 import typing
 from concurrent.futures import ThreadPoolExecutor
+import requests
 
 from lumenvox.api.speech.v1 import speech_pb2 as speech_api
 from lumenvox.api.speech.v1.speech_pb2_grpc import SpeechAPIServiceStub
 
 # Define your target machine here
 LUMENVOX_SPEECH_API_SERVICE = 'speech-api.testmachine.com:443'
+
+# Define your rest target endpoint for VB API
+LUMENVOX_REST_VB_SERVICE = 'biometric-api.testmachine.com:80'
+
+# Define your rest target endpoint for Management API
+LUMENVOX_REST_MANAGEMENT_SERVICE = 'management-api.testmachine.com:80'
 
 # Use this to enable TLS connectivity to your service
 ENABLE_TLS = True
@@ -136,10 +144,12 @@ class LumenVoxSpeechApiHelper:
         """
         new_response_handler = ResponseHandler(session_callback_stream=session_callback_stream)
         new_response_handler.callback_loop = asyncio.get_event_loop()
-        new_response_handler.callback_loop.run_in_executor(self.executor, self.response_handler, session_callback_stream, self.cancel_event)
+        new_response_handler.callback_loop.run_in_executor(self.executor, self.response_handler,
+                                                           session_callback_stream, self.cancel_event)
         self.response_handler_queue.put(new_response_handler)
 
-    def audio_streamer(self, session_id, audio_streaming_buffer, cancel_event):
+    @staticmethod
+    def audio_streamer(session_id, audio_streaming_buffer, cancel_event):
         """
         Returns an iterator which can be used to stream the given audio.
 
@@ -220,7 +230,7 @@ class LumenVoxSpeechApiHelper:
                 if cancel.is_set():
                     return
 
-        except Exception as e:
+        except Exception:
             self._peer_responded.set()
             raise
 
@@ -233,7 +243,7 @@ class LumenVoxSpeechApiHelper:
                     return self.queue_map[session_id].vad_queue.get(timeout=timeout_value)
             else:
                 return None
-        except queue.Empty as e:
+        except queue.Empty:
             # Handle empty queue here
             return None
 
@@ -246,7 +256,7 @@ class LumenVoxSpeechApiHelper:
                     return self.queue_map[session_id].result_queue.get(timeout=timeout_value)
             else:
                 return None
-        except queue.Empty as e:
+        except queue.Empty:
             # Handle empty queue here (no callback received)
             return None
 
@@ -259,7 +269,7 @@ class LumenVoxSpeechApiHelper:
                     return self.queue_map[session_id].partial_result_queue.get(timeout=timeout_value)
             else:
                 return None
-        except queue.Empty as e:
+        except queue.Empty:
             # Handle empty queue here (no callback received)
             return None
 
@@ -405,26 +415,6 @@ class LumenVoxSpeechApiHelper:
     def StartStreaming(self, session_id, audio_streaming_buffer, cancel_event):
         asyncio.get_event_loop().run_in_executor(self.executor, self.stream_audio, session_id, audio_streaming_buffer,
                                                  cancel_event)
-
-    def AudioStreamingPush(self, session_id, audio_stream_buffer) -> bool:
-        """
-        Fetch and send the next chunk from the audio_stream_buffer
-
-        :param session_id: session_id into which to send the audio
-        :param audio_stream_buffer: buffer object to process
-        :return: True if more data available to send in audio_stream_buffer, otherwise False
-        """
-        data = audio_stream_buffer.get_next_chunk()
-        if data is None:
-            # We've reached the end of the buffer, so nothing else to send.
-            return False
-
-        params = {
-            "session_id": session_id,
-            "stream_data": data
-        }
-        self.stub.AudioStreamPush(speech_api.AudioStreamPushRequest(**params), metadata=self.get_header())
-        return True
 
     def AudioPull(self, interaction_id=None, session_id=None, audio_start=None, audio_length=None) -> typing.Any:
         """
@@ -671,7 +661,8 @@ class LumenVoxSpeechApiHelper:
                                                   metadata=self.get_header())
         return response.interaction_id
 
-    def get_audio_file(self, audio_file_path) -> bytes:
+    @staticmethod
+    def get_audio_file(audio_file_path) -> bytes:
         """
         Reads the specified audio file from disc and returns the data
 
@@ -685,7 +676,8 @@ class LumenVoxSpeechApiHelper:
             audio_data = audio_file.read()
         return audio_data
 
-    def load_audio_stream_buffer(self, audio_file_path, stream_chunk_bytes) -> AudioStreamBuffer:
+    @staticmethod
+    def load_audio_stream_buffer(audio_file_path, stream_chunk_bytes) -> AudioStreamBuffer:
         """
         Reads the specified audio file from disc into an AudioStreamBuffer object and returns it
 
@@ -700,7 +692,8 @@ class LumenVoxSpeechApiHelper:
         audio_stream_buffer = AudioStreamBuffer(audio_data=audio_data, stream_chunk_bytes=stream_chunk_bytes)
         return audio_stream_buffer
 
-    def get_ssml_file_by_ref(self, ssml_file_path) -> str:
+    @staticmethod
+    def get_ssml_file_by_ref(ssml_file_path) -> str:
         """
         Opens the referenced SSML file and returns the contents as a string
 
@@ -727,7 +720,8 @@ class LumenVoxSpeechApiHelper:
             f.write(byte_array)
         return output_filename
 
-    def load_grammar_file(self, grammar_file_path) -> str:
+    @staticmethod
+    def load_grammar_file(grammar_file_path) -> str:
         """
         Opens the referenced grammar file and returns the contents as a string
 
@@ -787,3 +781,49 @@ class LumenVoxSpeechApiHelper:
         self.reset_result_event(session_id=session_id)
 
         return grammar_ids
+
+
+class LumenVoxVBApiHelper:
+    """
+    This function build the url for the VB rest requests
+    """
+
+    @staticmethod
+    def create_url(endpoint, prefix, section, method, params):
+        if endpoint == 'VB':
+            url = prefix.format(LUMENVOX_REST_VB_SERVICE, section, method)
+        elif endpoint == 'MGMT':
+            url = prefix.format(LUMENVOX_REST_MANAGEMENT_SERVICE, section, method)
+        else:
+            raise Exception
+        keys = list(params.keys())
+        if keys:
+            url += '?'
+            url += keys[0] + '=' + params[keys[0]]
+            for key in keys[1:]:
+                url += '&' + key + '=' + params[key]
+        return url
+
+    @staticmethod
+    def get_biometric_configuration(url):
+        """
+        This function retrieves the biometric configuration using the given URL
+        """
+        headers = {'x-deployment-id': 'd80b9d9b-086f-42f0-a728-d95f39dc2229',
+                   'x-operator-id': '45bcb59c-b29a-449f-8349-8d6bdcbbeeba',
+                   'x-scopes': 'MGMT'}
+        response = requests.request(
+            "GET",
+            url,
+            headers=headers,
+        )
+        return response.text
+
+    @staticmethod
+    def aux_wav_to_b64(audiofile):
+        """
+        this function converts an audio file to a b64 encoded file
+        """
+        with open(audiofile, "rb") as f1:
+            encoded_f1 = base64.b64encode(f1.read())
+        return "\"" + (encoded_f1.decode("utf-8") + '"')

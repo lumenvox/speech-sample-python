@@ -318,3 +318,13 @@ classify a number of things, including
 * Answering machine beep
 
 The example include a Fax tone audio, which is the expected result
+
+## Voice Biometrics Example
+
+The `vb_enroll_and_verify_example.py` script demonstrates an enrollment and
+verification in the Voice Biometrics system. This example makes use of some
+new audio files which can be found in the `test_data/VB` directory.
+
+Note that in order for this test to work, you will need to define the correct
+endpoints for both the Biometric API and the Management API. Like the Speech
+API, you will need to update your hosts file or DNS to make this work.
