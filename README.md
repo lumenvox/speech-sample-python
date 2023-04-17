@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 This is a sample project that demonstrates how to communicate with
-the LumenVox Speech API over gRPC using the published `speech.proto`
-definition file.
+the LumenVox API over gRPC using the published `.proto` definition
+files.
 
 It is designed to work optimally with a recent version of Python. 
 We recommend at least version 3.9, but please refer to the latest
@@ -48,31 +48,28 @@ provided by Google at:
 or review their code samples in the [examples](https://github.com/protocolbuffers/protobuf/blob/main/examples)
 directory.
 
-### Working with speech.proto
+### Working with .proto files
 
-The speech.proto file is available to LumenVox customers and allows
-access to the Speech API set of functionality.
+The .proto files are available to LumenVox customers and allow
+access to the LumenVox API set of functionality.
 
-Before using the .proto (protobuf definition) file, it needs to
+Before using the .proto (protobuf definition) files, they need to
 be `compiled` into a format that is compatible with the language
 being used. In this case, Python.
 
 See the [this page](https://github.com/protocolbuffers/protobuf)
-for details about how to use protoc to generate the API stubs
+for details about how to use protoc to generate the API stubs.
 
 There is a helper script you can run to easily generate these files:
 ```shell
 python make_stubs.py
 ```
 
-This should generate 2 files in the `/lumenvox/api/speech/v1/` 
-directory below your project root. These files are:
-
-* speech_pb2.py
-* speech_pb2_grpc.py
+This should generate files in the `/lumenvox/api/` and `/google/`
+directories below your project root.
 
 These files can be used by Python applications to talk to the
-LumenVox Speech API using gRPC protocol. This is needed in order
+LumenVox API using the gRPC protocol. This is needed in order
 to run the sample applications described here.
 
 ## TLS Connectivity
@@ -102,16 +99,16 @@ are switching between the two, you should be aware of this and assign your
 When using connections to a Kubernetes ingress, you often need to specify
 the domain name connection rather than IP address, so that the ingress
 can correctly route your requests. The example included in the code is
-`speech-api.testmachine.com:443`, however your Kubernetes configuration
+`lumenvox-api.testmachine.com`, however your Kubernetes configuration
 will likely differ from this, so please use the correct setting. You may
 also need to update your hosts file or DNS to correctly define this
 domain name to the Kubernetes IP address, depending on your environment.
 
-## LumenVox Speech Helper
+## LumenVox Helper Functions
 
 The bulk of the relatively complex code that communicates with
 the LumenVox API, along with a number of helper functions is
-located in the `lumenvox_speech_helper.py` file. This is used
+located in the `lumenvox_helper_function.py` file. This is used
 for all examples, and greatly simplifies the amount of coding
 needed to run and understand how to interact with the API.
 
@@ -121,19 +118,19 @@ functions instead if you prefer.
 
 > Before running any tests, please be sure to specify the
 > address of your target LumenVox server by updating the
-> following settings in `lumenvox_speech_helper.py`:
+> following settings in `lumenvox_helper_function.py`:
 > 
-> * `LUMENVOX_SPEECH_API_SERVICE` address of your server
-> * `DEPLOYMENT_ID` your assigned deployment ID in the server
-> * `OPERATOR_ID` that you wish to use (identifies API user)
+> * `LUMENVOX_API_SERVICE` address of your server
+> * `deploymentid` your assigned deployment ID in the server
+> * `operatorid` that you wish to use (identifies API user)
 
-Note that if you do not know your assigned `DEPLOYMENT_ID`, you may
+Note that if you do not know your assigned `deploymentid`, you may
 try using the default installed with the system, which is the value
 included in the file. If this works, you can practice with this, but
 at some point you should remove this temporary startup deployment ID
 and use a more permanent one.
 
-Similarly, for the `OPERATOR_ID`, if you do not have some identifier
+Similarly, for the `operatorid`, if you do not have some identifier
 that you wish to use for tracking who is making API requests, then
 you can use the sample one included for now. In production, it is
 best to use your own operator ID values to understand how or what is
@@ -145,31 +142,31 @@ example operations
 
 ### Callbacks
 
-Callbacks form part of the LumenVox Speech API. These are used to
+Callbacks form part of the LumenVox API. These are used to
 communicate events and notifications from the speech system to the
 API client.
 
-Such callback messages are described towards the bottom of the
-included `speech.proto` file in the `protobufs` directory. These
-include:
+Such callback messages are described towards the middle of the
+included `session.proto` file in the `protobufs/lumenvox/api`
+directory. These include:
 
-* InteractionIntermediateResultsReady
-* InteractionFinalResultsReadyMessage
-* VADMessage
-* session_id
+* PartialResult
+* FinalResult
+* VadEvent
+* SessionEvent
 
-These are defined in the `SessionCreateResponse` message type. The
-most important callback message is the `session_id`, which is also
+These are defined in the `SessionResponse` message type. The
+most important callback message is the `SessionEvent`, which is also
 the first message sent back to the API client after `SessionCreate`
-is called. This value is used as a parameter for other API calls.
+is called. This session_id value for this message is used as a
+parameter for other API calls.
 
 ### Threading Model
 
 Since callbacks can be received at any time, it is generally practical
 to use a worker thread to listen for these notifications and process
 them when they arrive. In this sample code, such a worker thread is
-started within the `LumenVoxSpeechApiHelper` call to `initialize_speech_api_helper`
-and then the listener is activated during `SessionCreate`.
+started within the `run_user_coroutine` call.
 
 Any callback messages received by the API client code (such as these
 examples), will be received and handled by the session-specific 
@@ -179,9 +176,7 @@ specified target session_id.
 
 Note that this configuration should allow for multiple concurrent
 session operations to be performed, however these simple examples
-do not show this. The `cpa_amd_streaming_example.py` example does show
-back-to-back requests, using different sessions within this threading
-model, which is a little more advanced than the others.
+do not show this.
 
 For production code, it is assumed that some more structured
 approach is taken for processing these callback messages. The aim
