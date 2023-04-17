@@ -1,6 +1,5 @@
 import asyncio
 import time
-from functools import partial
 from threading import Thread
 # settings.proto messages
 import lumenvox.api.settings_pb2 as settings_msg
@@ -90,22 +89,17 @@ async def create_api_session(lumenvox_api,
     return session_stream, session_id
 
 
-async def asr_streaming_session(lumenvox_api,
-                                audio_ref: str,
-                                language_code: str = None,
-                                grammar_file_ref: str = None, grammar_url: str = None,
-                                chunk_size: int = 4000,
-                                audio_format: int = None, sample_rate_hertz: int = None,
-                                deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
-                                ):
+async def amd_session(lumenvox_api,
+                      audio_ref: str,
+                      chunk_size: int = 4000,
+                      audio_format: int = None, sample_rate_hertz: int = None,
+                      deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                      ):
     """
-    Function to open session, and run test transcription interaction
+    Function to open session, and run test AMD interaction
 
     @param lumenvox_api: Helper class for LumenVox client api
     @param audio_ref: String reference to audio file
-    @param language_code: Two or four character code to specify language used
-    @param grammar_file_ref: Local grammar file to use, will be converted to an inline text grammar
-    @param grammar_url: External grammar URL to use
     @param chunk_size: Number of bytes to split audio data into
     @param audio_format: Audio format for the session to use
     @param sample_rate_hertz: Sample rate for session's audio
@@ -122,7 +116,7 @@ async def asr_streaming_session(lumenvox_api,
                                                           deployment_id, operator_id, correlation_id)
 
     # run one transcription interaction
-    await asr_streaming_interaction(lumenvox_api, session_stream, language_code, grammar_file_ref, grammar_url)
+    await amd_streaming_interaction(lumenvox_api, session_stream)
 
     # Signal the audio streaming thread to shut down, if still running
     global audio_thread_stop
@@ -132,27 +126,17 @@ async def asr_streaming_session(lumenvox_api,
     lumenvox_api.set_streams_sets_to_none()
 
 
-async def asr_streaming_interaction(lumenvox_api, session_stream,
-                                    language_code: str = None,
-                                    grammar_file_ref: str = None, grammar_url: str = None
-                                    ):
+async def amd_streaming_interaction(lumenvox_api, session_stream):
     """
-    Function to run test transcription interaction
+    Function to run test AMD interaction
 
     @param lumenvox_api: Helper class for LumenVox client api
     @param session_stream: Handle to the session stream
-    @param language_code: Two or four character code to specify language used
-    @param grammar_file_ref: Local grammar file to use, will be converted to an inline text grammar
-    @param grammar_url: External grammar URL to use
     @return: None
     """
 
-    # set default language code if none is provided
-    if not language_code:
-        language_code = 'en-us'
-
-    # Use voice activity detection, an eos of 3200 will allow longer pauses between words
-    vad_settings = lumenvox_api.define_vad_settings(use_vad=True, eos_delay_ms=3200)
+    # AMD uses voice activity detection, barge_in_timeout_ms specified how long to wait for a tone
+    vad_settings = lumenvox_api.define_vad_settings(use_vad=True, barge_in_timeout_ms=30000)
 
     # audio will be streamed, any audio streamed after the interaction is created, will be processed
     audio_consume_settings = lumenvox_api.define_audio_consume_settings(
@@ -160,33 +144,21 @@ async def asr_streaming_interaction(lumenvox_api, session_stream,
         stream_start_location=
         settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
 
-    # define at least one grammar and append them to a list to parse into InteractionCreateGrammarParse
-    grammars = []
-    if isinstance(grammar_file_ref, str):
-        if grammar_file_ref:
-            grammar = lumenvox_api.define_grammar(
-                inline_grammar_text=lumenvox_api.get_grammar_file_by_ref(grammar_file_ref))
-            grammars.append(grammar)
-    elif isinstance(grammar_file_ref, list):
-        n = len(grammar_file_ref)
-        for i in range(n):
-            g = lumenvox_api.define_grammar(
-                inline_grammar_text=lumenvox_api.get_grammar_file_by_ref(grammar_file_ref[i]))
-            grammars.append(g)
-    elif grammar_url:
-        grammar = lumenvox_api.define_grammar(grammar_url=grammar_url)
-        grammars.append(grammar)
+    # Recognize all Tone types
+    amd_settings = lumenvox_api.define_amd_settings(amd_enable=True,
+                                                    fax_enable=True,
+                                                    sit_enable=True,
+                                                    busy_enable=True,
+                                                    tone_detect_timeout_ms=500)
 
-    # create an asr interaction with supplied settings
-    await lumenvox_api.interaction_create_asr(session_stream=session_stream, grammars=grammars, language=language_code,
-                                              audio_consume_settings=audio_consume_settings,
-                                              vad_settings=vad_settings
-                                              )
+    # create an AMD interaction with supplied settings
+    await lumenvox_api.interaction_create_amd(session_stream=session_stream, amd_settings=amd_settings,
+                                              audio_consume_settings=audio_consume_settings, vad_settings=vad_settings)
 
     # wait for response containing interaction ID to be returned
     r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
-    interaction_id = r.interaction_create_asr.interaction_id
-    print("interaction_id extracted from interaction_create_asr", interaction_id)
+    interaction_id = r.interaction_create_amd.interaction_id
+    print("interaction_id extracted from interaction_create_amd", interaction_id)
 
     # Signal the audio streaming thread to begin streaming audio
     global audio_thread_stream_audio
@@ -211,13 +183,11 @@ if __name__ == '__main__':
     # to handle gRPC async messages is created
 
     lumenvox_api.run_user_coroutine(
-        asr_streaming_session(lumenvox_api,
-                              language_code='en',
-                              grammar_file_ref='../test_data/Grammar/en-US/en_digits.grxml',
-                              audio_ref='../test_data/Audio/en/1234.alaw',
-                              audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ALAW,
-                              chunk_size=4000,
-                              ), )
+        amd_session(lumenvox_api,
+                    audio_ref='../test_data/Audio/amd/audio-TDB-AM.ulaw',
+                    audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW,
+                    chunk_size=2000,
+                    ), )
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.

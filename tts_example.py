@@ -1,93 +1,133 @@
-import json
-import os
-import time
+import asyncio
+import sys
+import uuid
 
-from lumenvox_speech_helper import LumenVoxSpeechApiHelper
+# common.proto messages
+import lumenvox.api.common_pb2 as common_msg
+# settings.proto messages
+import lumenvox.api.settings_pb2 as settings_msg
+# audio_formats.proto messages
+import lumenvox.api.audio_formats_pb2 as audio_formats
+
+from lumenvox_helper_function import LumenVoxApiClient,  save_tts_test_audio_flag
 
 
-def tts_common(api_helper, text=None, ssml_url=None, voice=None,
-               language_code=None, audio_format='STANDARD_AUDIO_FORMAT_ULAW_8KHZ',
-               save_audio_file=False):
+
+async def create_api_session(lumenvox_api,
+                             audio_format: int = None, sample_rate_hertz: int = None,
+                             deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                             ):
     """
-    This function will request a TTS synthesis using the specified parameters
+    Creates LumenVox API session.  Sets up sesssion audio parameters.
+
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param audio_format: Audio format for the session to use
+    @param sample_rate_hertz: audio sample rate
+    @param deployment_id: unique UUID of the deployment to use for the session
+      (default deployment id will be used if not specified)
+    @param operator_id: optional unique UUID can be used to track who is making API calls
+    @param correlation_id: optional UUID can be used to track individual API calls
+    @return: None
     """
 
-    session_id = api_helper.SessionCreate('STANDARD_AUDIO_FORMAT_NO_AUDIO_RESOURCE')
-    print('1. session_id from SessionCreate: ', session_id)
+    # generate new session stream and session
+    session_stream, session_id = await lumenvox_api.session_init(deployment_id=deployment_id,
+                                                                 operator_id=operator_id,
+                                                                 correlation_id=correlation_id)
 
-    if text:
-        interaction_id = api_helper.InteractionCreateTTS(session_id=session_id, language=language_code,
-                                                         text=text, voice=voice,
-                                                         audio_format=audio_format)
-    else:
-        interaction_id = api_helper.InteractionCreateTTS(session_id=session_id, language=language_code,
-                                                         ssml_url=ssml_url, voice=voice,
-                                                         audio_format=audio_format)
+    await lumenvox_api.session_set_inbound_audio_format(session_stream=session_stream,
+                                                        audio_format=audio_format, sample_rate_hertz=sample_rate_hertz)
 
-    api_helper.InteractionBeginProcessing(session_id=session_id, interaction_id=interaction_id)
+    return session_stream, session_id
 
-    # Wait until we receive the final results callback
-    api_helper.wait_for_final_results(session_id=session_id, interaction_id=interaction_id, wait_time=3.5)
 
-    api_helper.InteractionRequestResults(session_id=session_id, interaction_id=interaction_id)
 
-    parsed_json = json.loads(api_helper.results_response.results_json)
+async def tts_interaction(lumenvox_api,
+                                  text: str = None, voice: str = None, language_code: str = None,
+                                  audio_format: int = None, sample_rate_hertz: int = None,
+                                  tts_output_file_name: str = None,
+                                  deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
 
-    if 'synth_warnings' in parsed_json:
-        print("Synthesis warnings: ", len(parsed_json['synth_warnings']))
-        for warning in parsed_json['synth_warnings']:
-            print('Synth warning reported: ', warning)
+                          ):
+    """
+    Common ASR (batch processing) coroutine
 
-    print(f"PARSED JSON: \n{json.dumps(parsed_json, indent=4, ensure_ascii=False)}")
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param audio_file: audio file to use for session audio
+    @param audio_format: audio format enum from StandardAudioFormat
+    @param sample_rate_hertz: audio sample rate
+    @param language_code: two or four character code specifying the language of the interaction
+    @param deployment_id: unique UUID of the deployment to use for the session
+    @param operator_id: optional unique UUID can be used to track who is making API calls
+    @param correlation_id: optional UUID can be used to track individual API calls
+      (default deployment id will be used if not specified)
+    """
 
-    print("SSML marks synthesized: ", len(parsed_json['synth_ssml_mark_offsets']))
-    for entry in parsed_json['synth_ssml_mark_offsets']:
-        print(" - mark Name: [", entry['name'], "] at offset:", entry['offset'])
+    # create session and set up audio codec and sample rate
+    # audio format and sample rate here are not for tts
+    # when a session is set up, the potential inbound audio format is define for the session
+    # if you are also doing ASR or other processing in the same session as TTS
+    # you can have different audio formats for inbound audio
+    # and outbound TTS audio
+    session_stream, session_id = await create_api_session(lumenvox_api,
+                                                          audio_format=audio_format,
+                                                          sample_rate_hertz=sample_rate_hertz,
+                                                          deployment_id=deployment_id,
+                                                          operator_id=operator_id,
+                                                          correlation_id=correlation_id)
 
-    if 'synth_word_sample_offsets' in parsed_json:
-        print("Words synthesized: ", len(parsed_json['synth_word_sample_offsets']))
-        print("Sentences synthesized: ", len(parsed_json['synth_sentence_sample_offsets']))
-        print("Voice used: ", parsed_json['synth_voice_sample_offsets'][0]['name'])
 
-    audio_id = parsed_json["audio_id"]
-    audio_data_len, audio_data = api_helper.AudioPull(session_id=session_id, interaction_id=audio_id)
 
-    output_filepath = None
-    if save_audio_file:
-        file_type = '.ulaw'
-        if audio_format == 'STANDARD_AUDIO_FORMAT_ALAW_8KHZ':
-            file_type = '.alaw'
-        if audio_format in ['STANDARD_AUDIO_FORMAT_PCM_8KHZ', 'STANDARD_AUDIO_FORMAT_PCM_16KHZ',
-                            'STANDARD_AUDIO_FORMAT_PCM_22KHZ']:
-            file_type = '.pcm'
-        output_filepath = api_helper.create_audio_file(session_id=session_id, byte_array=audio_data,
-                                                       file_type=file_type)
+    if not language_code:
+        language_code = 'en-us'
 
-    api_helper.InteractionClose(session_id=session_id, interaction_id=interaction_id)
-    api_helper.SessionClose(session_id=session_id)
-    return audio_data_len, output_filepath
+    #specify tts voice to use
+    inline_synth_settings = lumenvox_api.define_tts_inline_synthesis_settings(voice=voice)
+
+    #create tts interaction, specify settings, tts text, and audio format for tts
+    await lumenvox_api.interaction_create_tts(session_stream=session_stream, language=language_code,
+                                                inline_text=text,
+                                                audio_format=audio_format, sample_rate_hertz=sample_rate_hertz,
+                                                tts_inline_synthesis_settings=inline_synth_settings,
+                                                )
+
+
+    # wait for response containing interaction ID to be returned
+    r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
+    interaction_id = r.interaction_create_tts.interaction_id
+    print("interaction_id extracted from interaction_create_tts response is:", interaction_id)
+
+    # retrieve results, final results in this case signal tts audio is ready to pull
+    await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
+
+    #this helper function sends the API message AudioPullRequest, then waits for all the AudioPullResponse
+    # messages, which contain the TTS audio
+    audio_bytes = await lumenvox_api.audio_pull_all(session_stream=session_stream, audio_id=interaction_id)
+
+    #if specified, save output to file
+    if tts_output_file_name:
+        with open(tts_output_file_name, "wb") as binary_file:
+            binary_file.write(audio_bytes)
+
+
+    await lumenvox_api.handle_interaction_close_all(session_stream=session_stream, interaction_id=interaction_id)
+
 
 
 if __name__ == '__main__':
-
     # Create and initialize the API helper object that will be used to simplify the example code
-    api_helper = LumenVoxSpeechApiHelper()
-    api_helper.initialize_speech_api_helper()
+    lumenvox_api = LumenVoxApiClient()
+    lumenvox_api.initialize_lumenvox_api()
 
-    # Set to True to save the generated synthesized audio file
-    save_audio_file = False
-
-    ssml_text = api_helper.get_ssml_file_by_ref('test_data/mark_element.ssml')
-    audio_data_len, output_filepath = tts_common(api_helper=api_helper,
-                                                 language_code='en-us', voice='Chris',
-                                                 audio_format='STANDARD_AUDIO_FORMAT_ULAW_8KHZ',
-                                                 text=ssml_text,
-                                                 save_audio_file=save_audio_file)
-
-    print("\nSynthesis completed with ", audio_data_len, "bytes")
-    if save_audio_file:
-        print(" - saved audio file to ", output_filepath)
+    lumenvox_api.run_user_coroutine(
+        tts_interaction(lumenvox_api,
+                        language_code='en-us', voice='Chris',
+                        audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW,
+                        sample_rate_hertz=8000,
+                        text="Hello World",
+                        tts_output_file_name="tts_test.ulaw"
+                        ), )
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.
-    api_helper.shutdown_speech_api_helper()
+    lumenvox_api.shutdown_lumenvox_api_client()
