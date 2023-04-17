@@ -1,0 +1,394 @@
+// Protocol Buffer File
+// This is the gRPC definition for Results messages
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "google/rpc/status.proto";
+import "google/protobuf/struct.proto";
+import "lumenvox/api/audio_formats.proto";
+import "lumenvox/api/optional_values.proto";
+
+option csharp_namespace = "LumenVox.Api.Results";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "ResultsProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\Results";
+
+// One word that is part of an ASR result.
+//
+message Word {
+  // Time in milliseconds since beginning of audio where word starts.
+  int32 start_time_ms = 1;
+
+  // Length of word in milliseconds.
+  int32 duration_ms = 2;
+
+  // String output of word.
+  string word = 3;
+
+  // Value 0 to 1000 on how confident the result is.
+  uint32 confidence = 4;
+}
+
+// Raw transcript of words decoded by ASR
+//
+message AsrResultMetaData  {
+  // All words in Phrase so far.
+  repeated Word words = 1;
+
+  // All words in single string.
+  string transcript = 2;
+
+  // Time in milliseconds since beginning of audio stream where recognition
+  // starts.
+  int32 start_time_ms = 3;
+
+  // Length of transcript in milliseconds.
+  int32 duration_ms = 4;
+
+  // Overall confidence of the entire transcript.
+  uint32 confidence = 5;
+}
+
+// Semantic Interpretation of an ASR result
+//
+message SemanticInterpretation {
+  // Structure containing Semantic Interpretation.
+  google.protobuf.Struct interpretation = 1;
+
+  // Json string containing Semantic interpretation.
+  string interpretation_json = 2;
+
+  // The label of the grammar used to generate this Semantic Interpretation.
+  string grammar_label = 3;
+
+  // Value 0 to 1000 of how confident the ASR is that result is correct match
+  uint32 confidence = 4;
+
+  // Tag Format of in grammar used to generate this Semantic Interpretation.
+  string tag_format = 5;
+}
+
+// Structure to hold data provided from ASR as final results
+//
+message AsrGrammarResult {
+
+  // Raw ASR output used to produce semantic interpretations
+  AsrResultMetaData asr_result_meta_data = 1;
+
+  // List of all possible semantic interpretations for given transcript.
+  repeated SemanticInterpretation semantic_interpretations = 2;
+
+}
+
+// Structure to hold data provided from ASR as final results
+//
+message TranscriptionResult {
+
+  // Raw ASR output which includes the transcript of the audio.
+  AsrResultMetaData asr_result_meta_data = 1;
+
+  // If results are to be normalized, Normalized Result is added here.
+  NormalizedResult normalized_result = 2;
+
+  // If enhanced transcription with grammars is used results are added here.
+  repeated AsrGrammarResult grammar_results= 3;
+}
+
+//
+// Result returned from an AMD interaction.
+//
+message AmdInteractionResult {
+
+  // AMD result in the form of an ASR-type message.
+  AsrGrammarResult amd_result = 1;
+}
+
+//
+// Result returned from an ASR interaction.
+//
+message AsrInteractionResult {
+  // List of the N best possible matches provided via ASR.
+  repeated AsrGrammarResult n_bests = 1;
+
+  // The modality of the input, for example, speech, dtmf, etc.
+  string input_mode = 2;
+
+  // Language defined when creating the interaction.
+  string language = 3;
+
+}
+
+//
+// Result returned from a CPA interaction.
+//
+message CpaInteractionResult {
+
+  // CPA result in the form of an ASR-type message.
+  AsrGrammarResult cpa_result = 1;
+
+}
+
+//
+// Result returned from a transcription interaction.
+//
+message TranscriptionInteractionResult {
+  // List of the N best possible matches provided via ASR.
+  repeated TranscriptionResult n_bests = 1;
+
+  // Language defined when creating the interaction.
+  string language = 2;
+}
+
+//
+// Result returned from grammar parse interaction.
+//
+message GrammarParseInteractionResult {
+  // Input string used during grammar parse
+  string input_text = 1;
+
+  // List of all possible semantic interpretations for given text.
+  repeated SemanticInterpretation semantic_interpretations = 2;
+
+  // The modality of the input, for example, speech, dtmf, etc.
+  string input_mode = 3;
+
+  // Language defined when creating the interaction.
+  string language = 4;
+
+  // Set to true if more input on input text is valid of interaction grammars.
+  bool has_next_transition = 5;
+}
+
+// Token used in Inverse Text Normalization
+//
+message InverseTextNormalizationToken {
+  // Type of token.
+  string tag = 1;
+
+  // All data in token
+  google.protobuf.Struct data = 2;
+}
+
+// More detail on Redacted tokens
+//
+message RedactionData {
+  // Redacted Personal Identifiable Information.
+  bool personal_identifiable_information = 1;
+
+  // Type of redaction
+  string entity = 2;
+
+  // Redaction Score
+  float score = 3;
+}
+
+// One segment (one or more words) that is part of a result phrase.
+//
+message NormalizationSegment {
+  // Input word used to create segment.
+  string original_segment = 1;
+
+  // Index to words in original input.
+  repeated uint32 original_word_indices = 2;
+
+  // Output after Inverse Text normalization.
+  string vocalization = 3;
+
+  // Token information used in Inverse Text normalization.
+  InverseTextNormalizationToken token = 4;
+
+  // Data add for redaction.
+  RedactionData redaction = 5;
+
+  // Final output for segment.
+  string final = 6;
+}
+
+//
+// Result returned from an Normalize Text. Used in either Transcription
+// interaction or a Text Normalization interaction.
+//
+message NormalizedResult {
+  // All segments in result.
+  repeated NormalizationSegment segments = 1;
+
+  // Output after Inverse Text normalization.
+  string verbalized = 2;
+
+  // Output after Inverse Text normalization and redacted.
+  string verbalized_redacted = 3;
+
+  // Final output after Inverse Text normalization and punctuation and
+  // capitalization_normalization
+  string final = 4;
+
+  // Final output after Inverse Text normalization, punctuation and
+  // capitalization_normalization, and redaction
+  string final_redacted = 5;
+}
+
+//
+// Result returned from an Normalize Text interaction.
+//
+message NormalizeTextResult {
+  // Input string used for the text normalization request
+  string transcript = 1;
+
+  // Normalized result message
+  NormalizedResult normalized_result = 2;
+}
+
+// Warning generated by a synthesis
+//
+message SynthesisWarning {
+  // String containing warning message returned from synthesizer
+  string message = 1;
+
+  // Optional line indicating where the issue was detected
+  OptionalInt32 line = 2;
+}
+
+// Description of some artifact within the synthesis
+//
+message SynthesisOffset {
+  // Name of the artifact being referenced
+  string name = 1;
+
+  // Offset in milliseconds to the named artifact
+  uint32 offset_ms = 2;
+}
+
+// Contains a TTS interaction result.
+//
+message TtsInteractionResult {
+  // Format of returned audio.
+  AudioFormat audio_format = 1;
+
+  // Length of generated audio data.
+  uint32 audio_length_ms = 2;
+
+  // Offsets in milliseconds to where in audio buffer each synthesized sentence
+  // begins.
+  repeated uint32 sentence_offsets_ms = 3;
+
+  // Offsets in milliseconds to where in audio buffer each synthesized word
+  // begins.
+  repeated uint32 word_offsets_ms = 4;
+
+  // Offsets to where in audio buffer each synthesized SSML mark begins.
+  repeated SynthesisOffset ssml_mark_offsets = 5;
+
+  // Offsets to where in audio voice each synthesized begins.
+  repeated SynthesisOffset voice_offsets = 7;
+
+  // List of any Synthesis warnings.
+  repeated SynthesisWarning synthesis_warnings = 8;
+}
+
+// Contains results of various types that may be returned
+//
+message Result {
+  oneof result {
+    // Results for an ASR interaction
+    AsrInteractionResult asr_interaction_result = 1;
+
+    // Results for a transcription interaction
+    TranscriptionInteractionResult transcription_interaction_result = 2;
+
+    // Results for a grammar parse interaction
+    GrammarParseInteractionResult grammar_parse_interaction_result = 3;
+
+    // Results for a TTS interaction
+    TtsInteractionResult tts_interaction_result = 4;
+
+    // Result for a Normalize Text interaction
+    NormalizeTextResult normalize_text_result = 5;
+
+    // Result for an AMD interaction
+    AmdInteractionResult amd_interaction_result = 6;
+
+    // Result for a CPA interaction
+    CpaInteractionResult cpa_interaction_result = 7;
+  }
+}
+
+//
+// Callback sent when a partial interaction result is available.
+//
+message PartialResult {
+  // The interaction object being referenced
+  string interaction_id = 1;
+
+  // Partial result for the specified interaction
+  Result partial_result = 2;
+}
+
+//
+// Callback sent when a final interaction result is ready.
+//
+message FinalResult {
+  // The interaction object being referenced
+  string interaction_id = 1;
+
+  // Final result for the specified interaction. Null if status error > 0
+  Result final_result = 2;
+
+  // Final status of the interaction
+  FinalResultStatus final_result_status = 3;
+
+  // Status code produced. Returns 0 on success.
+  google.rpc.Status status = 4;
+}
+
+// List of Interaction FinalResult Statuses
+enum FinalResultStatus{
+
+  // No final status specified
+  FINAL_RESULT_STATUS_UNSPECIFIED = 0;
+
+  // No voice audio detected within the audio
+  // The final_result field in FinalResult will be empty
+  FINAL_RESULT_STATUS_NO_INPUT = 1;
+
+  // An error occurred that stopped processing
+  FINAL_RESULT_STATUS_ERROR = 2;
+
+  // Interaction cancelled or closed before results can be returned
+  FINAL_RESULT_STATUS_CANCELLED = 3;
+
+  // A transcription result was returned
+  FINAL_RESULT_STATUS_TRANSCRIPTION_MATCH = 11;
+
+  // A transcription “intermediate” final result was returned
+  FINAL_RESULT_STATUS_TRANSCRIPTION_CONTINUOUS_MATCH = 12;
+
+  // A transcription result was returned, 
+  // which contains one or more embedded grammar matches
+  FINAL_RESULT_STATUS_TRANSCRIPTION_GRAMMAR_MATCHES =13;
+  
+  // A complete grammar match was returned
+  FINAL_RESULT_STATUS_GRAMMAR_MATCH = 21;
+
+  // No result could be obtained for the audio with the supplied grammars
+  FINAL_RESULT_STATUS_GRAMMAR_NO_MATCH = 22;
+
+  // Raw text is returned, but could not be parsed with the supplied grammars
+  FINAL_RESULT_STATUS_GRAMMAR_PARTIAL_MATCH = 23;
+
+  // An AMD interaction found one or more tones within the audio
+  FINAL_RESULT_STATUS_AMD_TONE=31;
+
+  // An AMD interaction found no tones within the audio 
+  FINAL_RESULT_STATUS_AMD_NO_TONES=32;
+
+  // A CPA interaction result was returned
+  FINAL_RESULT_STATUS_CPA_RESULT=41;
+
+  // No voice audio was detected for a CPA interaction
+  FINAL_RESULT_STATUS_CPA_SILENCE=42;
+}

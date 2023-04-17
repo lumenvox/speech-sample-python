@@ -1,0 +1,41 @@
+// API Protocol Buffer File
+// This is the gRPC definition for the LumenVox API
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "lumenvox/api/global.proto";
+import "lumenvox/api/session.proto";
+
+option csharp_namespace = "LumenVox.Api";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "LumenVoxProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\Lumenvox";
+
+
+// LumenVox Service
+//
+// The LumenVox API can be used to access various speech resources,
+// such as Automatic Speech Recognition (ASR), Text-To-Speech (TTS),
+// Transcription, Call-Progress-Analysis (CPA), etc.
+//
+service LumenVox {
+  // Session
+  //
+  // Creates a new session and establishes a bidirectional stream, able to
+  // process all messages on this single bidirectional connection
+  //
+  rpc Session(stream SessionRequest)
+      returns (stream SessionResponse);
+
+  // Global
+  //
+  // Manages globally defined (deployment-level) objects
+  //
+  rpc Global(stream GlobalRequest)
+      returns (stream GlobalResponse);
+}

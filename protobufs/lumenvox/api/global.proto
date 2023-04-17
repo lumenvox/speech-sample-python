@@ -1,0 +1,243 @@
+// API Protocol Buffer File
+// This is the gRPC definition for global messages
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "google/rpc/status.proto";
+import "lumenvox/api/common.proto";
+import "lumenvox/api/optional_values.proto";
+import "lumenvox/api/settings.proto";
+
+option csharp_namespace = "LumenVox.Api.Global";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "GlobalProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\Global";
+
+
+message GlobalRequest {
+  // Optional unique reference per request message.
+  // A UUID value will be auto generated if not supplied by client
+  OptionalString correlation_id = 1;
+
+  // Valid deployment identifier (UUID) to associate the request with
+  string deployment_id = 2;
+
+  // UUID related to the operator (entity or person making request)
+  string operator_id = 3;
+
+  oneof request {
+    // Load a globally defined grammar
+    GlobalLoadGrammarRequest global_load_grammar_request = 4;
+
+    // Load a globally defined phrase list
+    GlobalLoadPhraseList global_load_phrase_list = 5;
+
+    // Get specified global default settings
+    GlobalGetSettingsRequest global_get_settings_request = 6;
+
+    // Default session settings
+    SessionSettings session_settings = 7;
+
+    // Default interaction settings
+    InteractionSettings interaction_settings = 8;
+
+    // Default grammar settings
+    GrammarSettings grammar_settings = 9;
+
+    // Default recognition settings
+    RecognitionSettings recognition_settings = 10;
+
+    // Default normalization settings
+    NormalizationSettings normalization_settings = 11;
+
+    // Default VAD settings
+    VadSettings vad_settings = 12;
+
+    // Default CPA settings
+    CpaSettings cpa_settings = 13;
+
+    // Default tone detection settings
+    AmdSettings amd_settings = 14;
+
+    // Default audio consume settings
+    AudioConsumeSettings audio_consume_settings = 15;
+
+    // Default logging settings
+    LoggingSettings logging_settings = 16;
+
+    // Optional settings specifying boost options for phrases
+    PhraseListSettings phrase_list_settings = 17;
+
+    // Will reset all of the settings to default
+    ResetSettings reset_settings = 18;
+  }
+}
+
+message GlobalResponse {
+  // Reference to corresponding request correlation_id
+  OptionalString correlation_id = 1;
+
+  oneof response {
+    // Global event notification (typically errors)
+    GlobalEvent global_event = 2;
+
+    // Global default settings (which were requested)
+    GlobalSettings global_settings = 3;
+
+    // Response to a global load grammar request
+    GlobalLoadGrammarResponse global_grammar = 4;
+
+    // Response to a global load phrase list request
+    GlobalLoadPhraseListResponse global_phrase_list = 5;
+  }
+}
+
+message GlobalLoadGrammarRequest {
+  // The language selector the specified grammar
+  // e.g.: "en-US", "de-DE" or dialect independent "en", "de", etc.)
+  string language = 1;
+
+  // Reference label for global grammar
+  // Note: label must consist of letters, digits, hyphens, underscores only
+  string grammar_label = 2;
+
+  oneof global_grammar_reference {
+    // A grammar URL to be loaded
+    string grammar_url = 3;
+
+    // A string containing the raw grammar text
+    string inline_grammar_text = 4;
+  }
+
+  // Optional grammar settings applied to this request
+  GrammarSettings grammar_settings = 5;
+}
+
+message GlobalLoadGrammarResponse {
+  // The status of the grammar load
+  google.rpc.Status status = 1;
+
+  // The mode of the loaded grammar
+  GrammarMode mode = 2;
+
+  // The label for the loaded grammar
+  string label = 3;
+}
+
+message GlobalLoadPhraseList {
+  // A list of strings containing word and phrase "hints" so that the
+  // transcriber recognition is more likely to recognize them. This can be
+  // used to improve the accuracy for specific words and phrases, for example,
+  // if specific commands are typically spoken by the user. This can also be
+  // used to add additional words or phrases to the transcriber's vocabulary.
+  repeated string phrases = 1;
+
+  // A label that can be used to reference this list within a transcription
+  // request
+  string phase_list_label = 2;
+
+  // The language selector describing which ASR resource will process request
+  // e.g.: "en-US", "de-DE" or dialect independent "en", "de", etc.
+  // Note that phrase lists are inherently language-independent, so this
+  // field is only used to direct which language-dependent resource will
+  // process the phrase load request
+  string language = 3;
+
+  //Optional settings specifying boost options for phrases
+  PhraseListSettings phrase_list_settings = 4;
+}
+
+message GlobalLoadPhraseListResponse {
+  // The status of the phrase list load.
+  google.rpc.Status status = 1;
+
+  // The label for the phrase list.
+  string label = 2;
+}
+
+message GlobalEvent {
+  // String containing event information
+  google.rpc.Status status_message = 2;
+}
+
+message GlobalGetSettingsRequest {
+
+  enum GetSettingsType {
+    GET_SETTINGS_TYPE_UNSPECIFIED = 0;
+
+    // SessionSettings type
+    GET_SETTINGS_TYPE_SESSION = 1;
+
+    // InteractionSettings type
+    GET_SETTINGS_TYPE_INTERACTION = 2;
+
+    // GrammarSettings type
+    GET_SETTINGS_TYPE_GRAMMAR = 3;
+
+    // RecognitionSettings type
+    GET_SETTINGS_TYPE_RECOGNITION= 4;
+
+    // NormalizationSettings type
+    GET_SETTINGS_TYPE_NORMALIZATION = 5;
+
+    // VadSettings type
+    GET_SETTINGS_TYPE_VAD = 6;
+
+    // CpaSettings type
+    GET_SETTINGS_TYPE_CPA = 7;
+
+    // AmdSettings type
+    GET_SETTINGS_TYPE_AMD = 8;
+
+    // AudioConsumeSettings type
+    GET_SETTINGS_TYPE_AUDIO_CONSUME = 9;
+
+    // LoggingSettings type
+    GET_SETTINGS_TYPE_LOGGING_SETTINGS = 10;
+  }
+
+  // Used to specify the type of settings to request
+  GetSettingsType settings_type = 1;
+}
+
+message GlobalSettings {
+  // Container for all session and interaction related (global) settings
+
+  // Default session settings
+  SessionSettings session_settings = 1;
+
+  // Default interaction settings
+  InteractionSettings interaction_settings = 2;
+
+  // Default grammar settings
+  GrammarSettings grammar_settings = 3;
+
+  // Default recognition settings
+  RecognitionSettings recognition_settings = 4;
+
+  // Default normalization settings
+  NormalizationSettings normalization_settings = 5;
+
+  // Default VAD settings
+  VadSettings vad_settings = 6;
+
+  // Default CPA settings
+  CpaSettings cpa_settings = 7;
+
+  // Default tone detection settings
+  AmdSettings amd_settings = 8;
+
+  // Default audio consume settings
+  AudioConsumeSettings audio_consume_settings = 9;
+
+  // Default logging settings
+  LoggingSettings logging_settings = 10;
+
+  //Optional settings specifying boost options for phrases
+  PhraseListSettings phrase_list_settings = 11;
+}

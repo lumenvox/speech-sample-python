@@ -1,5 +1,20 @@
-protobuf>=3.20.0
-grpcio==1.44.0
-grpcio-tools==1.44.0
-uuid==1.30
+# GRPC Python setup requirements
+coverage==6.4.2
+# cython==0.29.28
+# gevent==21.12.0
+grpcio==1.47.0
+grpcio-tools==1.47.0
+protobuf==3.20.1
+protoc-gen-swagger==0.1.0
+redis==4.3.4
 requests==2.28.1
+# scipy==1.8.0
+# six>=1.10
+# soundfile==0.10.3.post1
+unittest-xml-reporting==3.2.0
+uuid==1.30
+wheel>=0.29
+xmlrunner==1.7.7
+setuptools==57.0.0
+pyodbc~=4.0.32
+asynctest~=0.13.0

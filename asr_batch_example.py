@@ -1,78 +1,145 @@
-import json
-import time
+# common.proto messages
+import lumenvox.api.common_pb2 as common_msg
+# settings.proto messages
+import lumenvox.api.settings_pb2 as settings_msg
+# audio_formats.proto messages
+import lumenvox.api.audio_formats_pb2 as audio_formats
 
-from lumenvox_speech_helper import LumenVoxSpeechApiHelper
+from lumenvox_helper_function import LumenVoxApiClient
 
 
-def asr_batch_common(api_helper, audio_file, grammar_file_path=None, grammar_url=None,
-                     language_code=None, audio_format=None):
+async def create_api_session(lumenvox_api,
+                             audio_format: int = None, sample_rate_hertz: int = None,
+                             deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                             ):
     """
-    This function will launch a batch decode using the specified parameters
+    Creates LumenVox API session.  Sets up sesssion audio parameters.
 
-    Batch decodes load all audio at once and requests processing to begin. It does not perform Voice Activity
-    Detection (VAD)
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param audio_format: Audio format for the session to use
+    @param sample_rate_hertz: audio sample rate
+    @param deployment_id: unique UUID of the deployment to use for the session
+      (default deployment id will be used if not specified)
+    @param operator_id: optional unique UUID can be used to track who is making API calls
+    @param correlation_id: optional UUID can be used to track individual API calls
+    @return: None
     """
 
-    session_id = api_helper.SessionCreate(audio_format)
-    print('1. session_id from SessionCreate: ', session_id)
+    # generate new session stream and session
+    session_stream, session_id = await lumenvox_api.session_init(deployment_id=deployment_id,
+                                                                 operator_id=operator_id,
+                                                                 correlation_id=correlation_id)
 
-    audio_data_to_push = api_helper.get_audio_file(audio_file_path=audio_file)
-    api_helper.AudioPush(session_id=session_id, audio_data=audio_data_to_push)
-    print('2. Called AudioStreamPush - no response expected')
+    await lumenvox_api.session_set_inbound_audio_format(session_stream=session_stream,
+                                                        audio_format=audio_format, sample_rate_hertz=sample_rate_hertz)
 
-    grammar_ids = api_helper.load_grammar_helper(session_id=session_id, language_code=language_code,
-                                                 grammar_file_path=grammar_file_path, grammar_url=grammar_url)
+    return session_stream, session_id
 
-    interaction_id = api_helper.InteractionCreateASR(session_id=session_id, interaction_ids=grammar_ids)
-    print('3. interaction_id extracted from InteractionCreateASR response is: ', interaction_id)
 
-    # add setting for batch decoding.
-    interaction_test_json_string = '{' \
-                                   '    "INTERACTION_AUDIO_CONSUME": ' \
-                                   '    {' \
-                                   '        "AUDIO_CONSUME_MODE": "BATCH", ' \
-                                   '        "AUDIO_CONSUME_START_MODE": "STREAM_BEGIN" ' \
-                                   '    }' \
-                                   '}'
-    api_helper.InteractionSetSettings(session_id=session_id, interaction_id=interaction_id,
-                                      json_settings_string=interaction_test_json_string)
+async def asr_batch_interaction(lumenvox_api,
+                                audio_file: str = None, audio_format: int = None, sample_rate_hertz: int = None,
+                                language_code: str = None, grammar_file_ref: str = None,
+                                builtin_voice_grammar: common_msg.Grammar = None, grammar_url: str = None,
+                                deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                                ):
+    """
+    Common ASR (batch processing) coroutine
 
-    # Reset the final_result event so that we wait for the decode event (not the grammar events above)
-    api_helper.reset_result_event(session_id=session_id)
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param audio_file: audio file to use for session audio
+    @param audio_format: audio format enum from StandardAudioFormat
+    @param sample_rate_hertz: audio sample rate
+    @param language_code: two or four character code specifying the language of the interaction
+    @param grammar_file_ref: String reference to grammar file
+    @param grammar_url: URL of the grammar to use instead of inline
+    @param builtin_voice_grammar: Enum for builtin grammar
+    @param deployment_id: unique UUID of the deployment to use for the session
+    @param operator_id: optional unique UUID can be used to track who is making API calls
+    @param correlation_id: optional UUID can be used to track individual API calls
+      (default deployment id will be used if not specified)
+    """
 
-    print('session id before InteractionBeginProcessing: ', session_id)
-    api_helper.InteractionBeginProcessing(session_id=session_id, interaction_id=interaction_id)
-    print('4. called InteractionBeginProcessing for ASR (no response expected) interaction_id: ', interaction_id)
+    # create session and set up audio codec and sample rate
+    session_stream, session_id = await create_api_session(lumenvox_api,
+                                                          audio_format=audio_format,
+                                                          sample_rate_hertz=sample_rate_hertz,
+                                                          deployment_id=deployment_id,
+                                                          operator_id=operator_id,
+                                                          correlation_id=correlation_id)
 
-    api_helper.wait_for_final_results(session_id=session_id, interaction_id=interaction_id, wait_time=3.5)
-    print('5. Final Results ready:', str(api_helper.result_ready))
+    # with batch mode, all audio is sent before creating an interaction
+    await lumenvox_api.session_audio_push(session_stream=session_stream,
+                                          audio_data=lumenvox_api.get_audio_file(filename=audio_file))
 
-    if api_helper.result_ready:
-        # Only attempt to parse the results_json if results_ready is True (otherwise results_json is not valid)
-        parsed_json = json.loads(api_helper.results_response.results_json)
-    else:
-        parsed_json = None
+    # set audio usage as batch mode, and have processing for the interaction start at the beginning of all audio sent
+    audio_consume_settings = lumenvox_api.define_audio_consume_settings(
+        audio_consume_mode=
+        settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_BATCH,
+        stream_start_location=
+        settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_STREAM_BEGIN)
 
-    api_helper.InteractionClose(session_id=session_id, interaction_id=interaction_id)
-    api_helper.SessionClose(session_id=session_id)
+    # use voice activity detection
+    vad_settings = lumenvox_api.define_vad_settings(use_vad=True)
 
-    return parsed_json
+    if not language_code:
+        language_code = 'en-us'
+
+    recognition_settings = lumenvox_api.define_recognition_settings()
+
+    grammar_settings = lumenvox_api.define_grammar_settings()
+
+    # define at least one grammar and append them to a list to parse into InteractionCreateGrammarParse
+    grammars = []
+    if isinstance(grammar_file_ref, str):
+        if grammar_file_ref:
+            grammar = lumenvox_api.define_grammar(
+                inline_grammar_text=lumenvox_api.get_grammar_file_by_ref(grammar_file_ref))
+            grammars.append(grammar)
+    elif isinstance(builtin_voice_grammar, int):
+        grammar = lumenvox_api.define_grammar(builtin_voice_grammar=builtin_voice_grammar)
+        grammars.append(grammar)
+    elif isinstance(grammar_file_ref, list):
+        n = len(grammar_file_ref)
+        for i in range(n):
+            g = lumenvox_api.define_grammar(
+                inline_grammar_text=lumenvox_api.get_grammar_file_by_ref(grammar_file_ref[i]))
+            grammars.append(g)
+    elif grammar_url:
+        grammar = lumenvox_api.define_grammar(grammar_url=grammar_url)
+        grammars.append(grammar)
+
+    # InteractionCreateAsr request
+    await lumenvox_api.interaction_create_asr(session_stream=session_stream, grammars=grammars, language=language_code,
+                                              audio_consume_settings=audio_consume_settings, vad_settings=vad_settings,
+                                              recognition_settings=recognition_settings,
+                                              grammar_settings=grammar_settings)
+
+    # wait for response containing interaction ID to be returned
+    r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
+    interaction_id = r.interaction_create_asr.interaction_id
+    print("interaction_id extracted from interaction_create_asr response is:", interaction_id)
+
+    # attempt to retrieve a result at this point
+    await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
+
+    await lumenvox_api.handle_interaction_close_all(session_stream=session_stream, interaction_id=interaction_id)
 
 
 if __name__ == '__main__':
-
     # Create and initialize the API helper object that will be used to simplify the example code
-    api_helper = LumenVoxSpeechApiHelper()
-    api_helper.initialize_speech_api_helper()
+    lumenvox_api = LumenVoxApiClient()
+    lumenvox_api.initialize_lumenvox_api()
 
-    result = asr_batch_common(api_helper=api_helper,
-                              grammar_file_path='test_data/en_digits.grxml',
-                              audio_file='test_data/1234.ulaw',
-                              audio_format='STANDARD_AUDIO_FORMAT_ULAW_8KHZ',
-                              language_code='en')
+    # the function asr_batch_interaction creates session, and runs an interaction
+    # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so that the event loop
+    # to handle gRPC async messages is created
+    lumenvox_api.run_user_coroutine(
+        asr_batch_interaction(lumenvox_api=lumenvox_api,
+                              audio_file='../test_data/Audio/en/1234-1s-front-1s-end.ulaw',
+                              audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW,
+                              sample_rate_hertz=8000,
+                              language_code='en',
+                              grammar_file_ref='../test_data/Grammar/en-US/en_digits.grxml',
+                              ), )
 
-    print(">>>> result returned:\n", json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False))
-
-    # Note that if the above code encounters a problem, the following may not be called, and the callback thread
-    # running inside the helper may not be told to stop. You should ensure this happens in production code.
-    api_helper.shutdown_speech_api_helper()
+    lumenvox_api.shutdown_lumenvox_api_client()

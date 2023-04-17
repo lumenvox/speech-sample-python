@@ -1,0 +1,253 @@
+// API Protocol Buffer File
+// This is the gRPC definition for session messages
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "google/rpc/status.proto";
+import "lumenvox/api/audio_formats.proto";
+import "lumenvox/api/common.proto";
+import "lumenvox/api/interaction.proto";
+import "lumenvox/api/optional_values.proto";
+import "lumenvox/api/results.proto";
+import "lumenvox/api/settings.proto";
+
+option csharp_namespace = "LumenVox.Api.Session";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "SessionProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\Session";
+
+// Note: All UUID values should be compatible with RFC 4122, and string format
+//       should be in the form "d2dfc723-a6db-4ceb-b6e5-e46867dfe1cb"
+
+
+message SessionRequestMessage {
+  oneof name {
+    // Creates a new session and returns its ID and session related messages
+    // through response streamed callback messages
+    SessionCreateRequest session_create = 1;
+
+    // Defines the inbound audio format for the session. Must be assigned
+    // before any audio is sent and cannot later be changed.
+    SessionInboundAudioFormatRequest session_audio_format = 2;
+
+    // Attach to an existing session
+    SessionAttachRequest session_attach = 3;
+
+    // Explicit request to close session
+    SessionCloseRequest session_close = 4;
+
+    // Set settings to be configured for session.
+    SessionSettings session_set_settings = 5;
+
+    // Get settings for session.
+    SessionGetSettingsRequest session_get_settings = 6;
+
+    // Load session-specific grammar
+    SessionLoadGrammarRequest session_load_grammar = 7;
+
+    // Load session-specific phrase list
+    SessionLoadPhraseList session_load_phrase_list = 8;
+  }
+}
+
+message SessionRequest {
+  // Optional unique reference per request message.
+  // A UUID value will be auto generated if not supplied by client
+  OptionalString correlation_id = 1;
+
+  oneof request_type {
+    // For session-specific requests
+    SessionRequestMessage session_request = 2;
+
+    // For audio-specific requests
+    AudioRequestMessage audio_request = 3;
+
+    // For interaction-specific requests
+    InteractionRequestMessage interaction_request = 4;
+
+    // For DTMF events (part of ASR interaction)
+    DtmfPushRequest dtmf_request = 5;
+  }
+}
+
+message SessionResponse {
+  // Session identifier (will be returned from initial call)
+  OptionalString session_id = 1;
+
+  // Optional reference to corresponding request correlation_id
+  OptionalString correlation_id = 2;
+
+  oneof response_type {
+    // ===============================
+    // callback messages...
+
+    // VAD event notification
+    VadEvent vad_event = 3;
+
+    // Final result notification
+    FinalResult final_result = 4;
+
+    // Partial result notification
+    PartialResult partial_result = 5;
+
+    // Session event notification (typically errors)
+    SessionEvent session_event = 6;
+
+    // Response for explicit session close request
+    SessionCloseResponse session_close = 7;
+
+    // Response to audio pull request
+    AudioPullResponse audio_pull = 8;
+
+    // Response to get settings for session.
+    SessionSettings session_get_settings = 9;
+
+    // Response to create AMD interaction request
+    InteractionCreateAmdResponse interaction_create_amd = 10;
+
+    // Response to create ASR interaction request
+    InteractionCreateAsrResponse interaction_create_asr = 11;
+
+    // Response to create CPA interaction request
+    InteractionCreateCpaResponse interaction_create_cpa = 12;
+
+    // Response to create TTS interaction request
+    InteractionCreateTtsResponse interaction_create_tts = 13;
+
+    // Response to create a grammar parse request
+    InteractionCreateGrammarParseResponse interaction_create_grammar_parse = 14;
+
+    // Response to create a normalize text request
+    InteractionCreateNormalizeTextResponse interaction_create_normalize_text = 15;
+
+    // Response to interaction get settings request
+    InteractionSettings interaction_get_settings = 16;
+
+    // Response to interaction request results
+    InteractionRequestResultsResponse interaction_request_results = 17;
+
+    // Response to create Transcription interaction request
+    InteractionCreateTranscriptionResponse interaction_create_transcription = 18;
+
+    // Response for session load phrase list request
+    SessionLoadPhraseListResponse session_phrase_list = 19;
+
+    // Response for session load grammar request
+    SessionLoadGrammarResponse session_grammar = 20;
+
+    // Additional InteractionResponse message types added here
+
+    // Response to interaction cancel
+    InteractionCancelResponse interaction_cancel = 100;
+
+    // Response to explicit request to close interaction
+    InteractionCloseResponse interaction_close = 101;
+  }
+}
+
+message SessionCreateRequest {
+  // Deployment identifier to associate the session with
+  string deployment_id = 1;
+
+  // Optional unique reference for session (must be UUID)
+  // A UUID value will be auto generated if not supplied by client
+  OptionalString session_id = 2;
+
+  // UUID related to the operator (entity or person making request)
+  string operator_id = 3;
+}
+
+message SessionInboundAudioFormatRequest {
+  // Parameters for the inbound audio resource associated with the session
+  AudioFormat audio_format = 1;
+}
+
+message SessionAttachRequest {
+  // Deployment identifier associated to the session
+  string deployment_id = 1;
+
+  // Valid session identifier to attached to request
+  string session_id = 2;
+
+  // UUID related to the operator (entity or person making request)
+  string operator_id = 3;
+}
+
+message SessionCloseRequest {
+  // Currently no fields defined
+}
+
+message SessionCloseResponse {
+  // Status of request
+  google.rpc.Status close_status = 1;
+}
+
+message SessionGetSettingsRequest {
+  // Currently no fields defined
+}
+
+message SessionLoadGrammarRequest {
+  // The language selector the specified grammar
+  // e.g.: "en-US", "de-DE" or dialect independent "en", "de", etc.
+  string language = 1;
+
+  // Reference label for session grammar
+  // Note: label must consist of letters, digits, hyphens, underscores only
+  string grammar_label = 2;
+
+  oneof session_grammar_reference {
+    // A grammar URL to be loaded
+    string grammar_url = 3;
+
+    // A string containing the raw grammar text
+    string inline_grammar_text = 4;
+  }
+
+  // Optional grammar settings applied to this request
+  GrammarSettings grammar_settings = 5;
+}
+
+message SessionLoadGrammarResponse {
+  // The status of the grammar load
+  google.rpc.Status status = 1;
+
+  // The mode of the loaded grammar
+  GrammarMode mode = 2;
+
+  // The label for the loaded grammar
+  string label = 3;
+}
+
+message SessionLoadPhraseList {
+  // A list of strings containing word and phrase "hints" so that the
+  // transcriber recognition is more likely to recognize them. This can be
+  // used to improve the accuracy for specific words and phrases, for example,
+  // if specific commands are typically spoken by the user. This can also be
+  // used to add additional words or phrases to the transcriber's vocabulary.
+  repeated string phrases = 1;
+
+  // A label that can be used to reference this list within a transcription
+  // request
+  string phase_list_label = 2;
+
+  // The language selector describing which ASR resource will process request
+  // e.g.: "en-US", "de-DE" or dialect independent "en", "de", etc.
+  // Note that phrase lists are inherently language-independent, so this
+  // field is only used to direct which language-dependent resource will
+  // process the phrase load request
+  string language = 3;
+}
+
+message SessionLoadPhraseListResponse {
+  // The status of the phrase list load.
+  google.rpc.Status status = 1;
+
+  // The label for the phrase list.
+  string label = 2;
+}
+

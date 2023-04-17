@@ -1,0 +1,351 @@
+// API Protocol Buffer File
+// This is the gRPC definition for interaction messages
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "google/rpc/status.proto";
+import "lumenvox/api/audio_formats.proto";
+import "lumenvox/api/common.proto";
+import "lumenvox/api/optional_values.proto";
+import "lumenvox/api/results.proto";
+import "lumenvox/api/settings.proto";
+
+option csharp_namespace = "LumenVox.Api.Interaction";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "InteractionProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\Interaction";
+
+
+message InteractionRequestMessage {
+  oneof interaction_request {
+    // Create AMD interaction request
+    InteractionCreateAmdRequest interaction_create_amd = 1;
+
+    // Create ASR interaction request
+    InteractionCreateAsrRequest interaction_create_asr = 2;
+
+    // Create CPA interaction request
+    InteractionCreateCpaRequest interaction_create_cpa = 3;
+
+    // Create transcription interaction request
+    InteractionCreateTranscriptionRequest interaction_create_transcription = 4;
+
+    // Create TTS interaction request
+    InteractionCreateTtsRequest interaction_create_tts = 5;
+
+    // Create a grammar parse request
+    InteractionCreateGrammarParseRequest interaction_create_grammar_parse = 6;
+
+    // Interaction begin processing
+    InteractionBeginProcessingRequest interaction_begin_processing = 9;
+
+    // Interaction finalize processing
+    InteractionFinalizeProcessingRequest interaction_finalize_processing = 10;
+
+    // Interaction request results
+    InteractionRequestResultsRequest interaction_request_results = 11;
+
+    // Create a normalize text request
+    InteractionCreateNormalizeTextRequest interaction_create_normalize_text = 12;
+
+    // Additional InteractionRequest message types added here
+
+    // Interaction cancel
+    InteractionCancelRequest interaction_cancel = 100;
+
+    // Explicit request to close interaction
+    InteractionCloseRequest interaction_close = 101;
+  }
+}
+
+message InteractionCreateAmdRequest {
+
+  // Parameters for this interaction
+  AmdSettings amd_settings = 1;
+
+  // Optional settings specifying audio to process for interaction
+  AudioConsumeSettings audio_consume_settings = 2;
+
+  // Optional settings related to voice activity detection
+  VadSettings vad_settings = 3;
+
+  // Optional settings related to all interactions
+  GeneralInteractionSettings general_interaction_settings = 4;
+}
+
+message InteractionCreateAmdResponse {
+  // Interaction ID (uuid) that can be used during subsequent AMD processing
+  string interaction_id = 1;
+}
+
+message InteractionCreateAsrRequest {
+  // The language selector the specified grammars
+  // e.g.: "en-US", "de-DE" or dialect independent "en", "de", etc.
+  string language = 1;
+
+  // List of grammars to use, one for each root grammar to activate
+  repeated Grammar grammars = 2;
+
+  // Optional grammar settings to apply to this interaction
+  GrammarSettings grammar_settings = 3;
+
+  // Optional recognition settings for this interaction
+  RecognitionSettings recognition_settings = 4;
+
+  // Optional settings related to voice activity detection
+  VadSettings vad_settings = 5;
+
+  // Optional settings specifying audio to process for interaction
+  AudioConsumeSettings audio_consume_settings = 6;
+
+  // Optional settings related to all interactions
+  GeneralInteractionSettings general_interaction_settings = 7;
+}
+
+message InteractionCreateAsrResponse {
+  // Interaction ID (uuid) that can be used during subsequent ASR processing
+  string interaction_id = 1;
+}
+
+message InteractionCreateCpaRequest {
+  // Parameters for this interaction
+  CpaSettings cpa_settings = 1;
+
+  // Optional settings specifying audio to process for interaction
+  AudioConsumeSettings audio_consume_settings = 2;
+
+  // Optional settings related to voice activity detection
+  VadSettings vad_settings = 3;
+
+  // Optional settings related to all interactions
+  GeneralInteractionSettings general_interaction_settings = 4;
+}
+
+message InteractionCreateCpaResponse {
+  // Interaction ID (uuid) that can be used during subsequent CPA processing
+  string interaction_id = 1;
+}
+
+message TranscriptionPhraseList {
+  // Optional list of strings containing words and phrases "hints" so that
+  // the transcriber recognition is more likely to recognize them. This can be
+  // used to improve the accuracy for specific words and phrases, for example,
+  // if specific commands are typically spoken by the user. This can also be
+  // used to add additional words or phrases to the transcriber's vocabulary.
+  repeated string phrases = 1;
+
+  // Optional reference to previously defined global phrase list(s)
+  PhraseList global_phrase_list = 2;
+
+  // Optional reference to previously defined session phrase list(s)
+  PhraseList session_phrase_list = 3;
+}
+
+
+message InteractionCreateTranscriptionRequest {
+  // Transcription language selector this request.
+  // e.g.: "en-US", "de-DE" or dialect independent "en", "de", etc.
+  string language = 1;
+
+  // Optional phrase lists for interaction
+  repeated TranscriptionPhraseList phrases = 2;
+
+  // If `true`, transcription will perform continuous
+  // recognition (continuing to wait for and process audio even if the user
+  // pauses speaking) until the client closes the input stream (gRPC API).
+  // This may return multiple FinalResult callback messages.
+  //
+  // If `false`, the recognizer will detect a single spoken utterance. When it
+  // detects that the user has paused or stopped speaking, it will return an
+  // FinalResult callback and cease recognition. It will return no
+  // more than one FinalResult.
+  //
+  // Default: false
+  OptionalBool continuous_utterance_transcription = 3;
+
+  // Optional recognition settings for this interaction
+  RecognitionSettings recognition_settings = 4;
+
+  // Optional settings related to voice activity detection
+  VadSettings vad_settings = 5;
+
+  // Optional settings specifying audio to process for interaction
+  AudioConsumeSettings audio_consume_settings = 6;
+
+  // Optional settings specifying whether text normalization step should be
+  // performed on output of this interaction.
+  NormalizationSettings normalization_settings = 7;
+
+  //Optional settings specifiying boost options for phrases
+  PhraseListSettings phrase_list_settings = 8;
+
+  // Optional settings related to all interactions
+  GeneralInteractionSettings general_interaction_settings = 9;
+
+  // Optional list of grammars to use during transcription
+  // when a grammar matches during transcription, the semantic results of the 
+  // grammar will also be returned
+  repeated Grammar embedded_grammars = 10;
+
+  // Optional grammar settings for embedded grammars
+  GrammarSettings embedded_grammar_settings = 11;
+}
+
+message InteractionCreateTranscriptionResponse {
+  // Interaction ID (uuid) that can be used during subsequent ASR processing
+  string interaction_id = 1;
+}
+
+message InteractionCreateTtsRequest {
+  // Synthesis language for this request (e.g.: "en-US", "de-DE", etc.)
+  string language = 1;
+
+  // Inline TTS definition (text and optional parameters)
+  message InlineTtsRequest {
+    // Text to synthesize, can simple text, or SSML
+    string text = 1;
+
+    // Optional settings for voice synthesis.
+    TtsInlineSynthesisSettings tts_inline_synthesis_settings = 2;
+  }
+
+  message SsmlUrlRequest {
+    // URL from which to fetch synthesis request SSML
+    string ssml_url = 1;
+
+    // Enables or disables the verification of a peer's certificate using a
+    // local certificate authority file upon HTTPS requests. Set to
+    // false (disabled) to skip verification for trusted sites.
+    // Default: true
+    OptionalBool ssl_verify_peer = 2;
+  }
+
+  oneof tts_request {
+    // SSML type request and parameters
+    SsmlUrlRequest ssml_request = 2;
+
+    // Inline TTS definition (text and optional parameters)
+    InlineTtsRequest inline_request = 3;
+  }
+
+  // Audio format to be generated by TTS Synthesis
+  // Note: this is not configurable at Session or Global level, since it is
+  //       explicitly required for each interaction request.
+  AudioFormat audio_format = 4;
+
+  // Optional timeout to limit the maximum time allowed for a synthesis
+  // Default: 5000 milliseconds
+  OptionalInt32 synthesis_timeout_ms = 6;
+
+  // Optional settings related to all interactions
+  GeneralInteractionSettings general_interaction_settings = 7;
+}
+
+message InteractionCreateTtsResponse {
+  // Interaction ID (uuid) that can be used during subsequent TTS processing
+  string interaction_id = 1;
+}
+
+message InteractionCreateNormalizeTextRequest {
+  // Language to use for normalization (e.g. en-us)
+  string language = 1;
+
+  // All words in single string.
+  string transcript = 2;
+
+  // Optional settings specifying whether text normalization step should be
+  // performed on output of this interaction.
+  NormalizationSettings normalization_settings = 3;
+
+  // Optional settings related to all interactions
+  GeneralInteractionSettings general_interaction_settings = 4;
+}
+
+message InteractionCreateNormalizeTextResponse {
+  // Interaction ID (UUID) that can be used during subsequent Normalize Text
+  // processing
+  string interaction_id = 1;
+}
+
+message InteractionCreateGrammarParseRequest {
+  // The language selector the specified grammars
+  // e.g.: "en-US", "de-DE" or dialect independent "en", "de", etc.
+  string language = 1;
+
+  // List of grammars to use, one for each root grammar to activate
+  repeated Grammar grammars = 2;
+
+  // Optional grammar settings to apply to this interaction
+  GrammarSettings grammar_settings = 3;
+
+  // Input text to be parsed against specified grammar[s]
+  string input_text = 4;
+
+  // Maximum milliseconds to allow for a grammar parse. If this is exceeded,
+  // a timeout error will be raised. Range 0-10000000 (~166 minutes)
+  // Default: 10000 (10 seconds)
+  OptionalInt32 parse_timeout_ms = 5;
+
+  // Optional settings related to all interactions
+  GeneralInteractionSettings general_interaction_settings = 6;
+}
+
+message InteractionCreateGrammarParseResponse {
+  // The interaction object being referenced by the request
+  string interaction_id = 1;
+}
+
+
+message InteractionBeginProcessingRequest {
+  // The interaction object being referenced
+  string interaction_id = 1;
+}
+
+message InteractionFinalizeProcessingRequest {
+  // The interaction object being referenced
+  string interaction_id = 1;
+}
+
+message InteractionRequestResultsRequest {
+  // The interaction object being referenced
+  string interaction_id = 1;
+}
+
+message InteractionRequestResultsResponse {
+  // The interaction object being referenced
+  string interaction_id = 1;
+
+  // Requested results
+  Result interaction_results = 2;
+}
+
+message InteractionCancelRequest {
+  // The interaction object being referenced
+  string interaction_id = 1;
+}
+
+message InteractionCancelResponse {
+  // The interaction object being referenced
+  string interaction_id = 1;
+
+  // Status of request
+  google.rpc.Status close_status = 2;
+}
+
+message InteractionCloseRequest {
+  // The interaction object being referenced
+  string interaction_id = 1;
+}
+
+message InteractionCloseResponse {
+  // The interaction object being referenced
+  string interaction_id = 1;
+
+  // Status of request
+  google.rpc.Status close_status = 2;
+}

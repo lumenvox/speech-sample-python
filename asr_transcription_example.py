@@ -1,146 +1,201 @@
-import json
-import threading
+import asyncio
 import time
+from threading import Thread
+# settings.proto messages
+import lumenvox.api.settings_pb2 as settings_msg
 
-from lumenvox.api.speech.v1 import speech_pb2 as speech_api
-from lumenvox_speech_helper import LumenVoxSpeechApiHelper
+from lumenvox_helper_function import LumenVoxApiClient
 
 
-def asr_transcription_common(api_helper, audio_file, grammar_file_path=None, grammar_url=None,
-                             language_code=None, audio_format=None):
+def push_audio_thread(lumenvox_api, session_stream, audio_ref, chunk_size):
     """
-    This function will launch a transcription decode using the specified parameters
+    In order to show how audio may be streamed from another thread, asynchronously,
+    this function is called as a thread to stream in audio with a sleep between sending
+    a packet to mimic streaming
 
-    This is very similar to streaming mode, except that transcription uses a special grammar to activate
-    transcription mode, and typically processes lengthier audio. Also note that transcription can be performed
-    using VAD mode (as shown here), or could be performed in batch-mode (similar to batch example) for offline,
-    or non-realtime use cases.
+    This relies on global variables audio_thread_stream_audio to stop and start streaming
+      and audio_thread_stop to stop thread
+      In production code, this would not be recommended
+
+    @param lumenvox_api: String reference to audio file
+    @param session_stream: Session stream to use if session is already available
+    @param audio_ref: Audio file name
+    @param chunk_size: Number of bytes to split audio data into
+    @return: None
     """
+    audio_buffer = lumenvox_api.load_audio_buffer(filename=audio_ref, chunk_bytes=chunk_size)
 
-    session_id = api_helper.SessionCreate(audio_format)
-    print('1. session_id from SessionCreate: ', session_id)
+    more_bytes = True
 
-    # api_helper.AudioStreamCreate(session_id=session_id, audio_format=audio_format)
-    # print('2. Called AudioStreamCreate - no response expected')
-
-    grammar_ids = api_helper.load_grammar_helper(session_id=session_id, language_code=language_code,
-                                                 grammar_file_path=grammar_file_path, grammar_url=grammar_url)
-
-    interaction_id = api_helper.InteractionCreateASR(session_id=session_id, interaction_ids=grammar_ids)
-    print('2. interaction_id extracted from InteractionCreateASR response is: ', interaction_id)
-
-    # Settings for streaming decodes
-    interaction_test_json_string = '{' \
-                                   '    "INTERACTION_AUDIO_CONSUME": ' \
-                                   '    {' \
-                                   '        "AUDIO_CONSUME_MODE": "STREAMING", ' \
-                                   '        "AUDIO_CONSUME_START_MODE":"STREAM_BEGIN" ' \
-                                   '    }, ' \
-                                   '    "INTERACTION_VAD": ' \
-                                   '    { ' \
-                                   '        "AUTO_FINALIZE_ON_EOS": "true" ' \
-                                   '    } ' \
-                                   '}'
-    api_helper.InteractionSetSettings(session_id=session_id, interaction_id=interaction_id,
-                                      json_settings_string=interaction_test_json_string)
-
-    # Reset the final_result event so that we wait for the decode event (not the grammar events above)
-    api_helper.reset_result_event(session_id=session_id)
-
-    api_helper.InteractionBeginProcessing(session_id=session_id, interaction_id=interaction_id)
-    print('3. called InteractionBeginProcessing for ASR (no response expected) interaction_id: ', interaction_id)
-
-    # Load audio buffer with specified audio file contents and start streaming in another thread
-    audio_streaming_buffer = api_helper.load_audio_stream_buffer(audio_file_path=audio_file,
-                                                                 stream_chunk_bytes=4000)
-    audio_stream_cancel = threading.Event()
-    api_helper.StartStreaming(session_id=session_id, audio_streaming_buffer=audio_streaming_buffer,
-                              cancel_event=audio_stream_cancel)
-
-    while not api_helper.is_audio_stream_complete(session_id):
-        # In this loop, we're checking the callback channels to see what's happening with the stream. When we receive
-        # results, we can set the audio_stream_cancel event to end the stream (which is happening in another thread).
-
-        # See if we got a VAD callback without delaying (timeout_value=0)
-        vad_callback = api_helper.get_vad_callback(session_id=session_id, timeout_value=0)
-        if vad_callback is not None:
-            # We received a vad_callback here. We could do something with it.
-            print("## Got vad callback", vad_callback.VadEventType.Name(vad_callback.vad_event_type),
-                  "interaction_id", vad_callback.interaction_id, "session_id", vad_callback.session_id)
-
-        # Check if we got a PARTIAL RESULT callback without delaying (timeout_value=0)
-        partial_result_callback = api_helper.get_partial_result_callback(session_id=session_id, timeout_value=0)
-        if partial_result_callback is not None:
-            # We received a partial result callback here. We could do something with it.
-            print("## Got partial result callback for interaction_id", partial_result_callback.interaction_id,
-                  "session_id", partial_result_callback.session_id)
-            got_partial_result = api_helper.InteractionRequestResults(session_id=session_id,
-                                                                      interaction_id=interaction_id)
-            if got_partial_result and api_helper.result_ready:
-                partial_json = json.loads(api_helper.results_response.results_json)
-                print("Partial results: ", str(partial_json))
-
-        # See if we got a RESULT callback without delaying (timeout_value=0)
-        result_callback = api_helper.get_result_callback(session_id=session_id, timeout_value=0)
-        if result_callback is not None:
-            if type(result_callback) == speech_api.FinalResultsReady:
-                if result_callback.session_id != session_id:
-                    print("## Got InteractionFinalResultsReadyMessage for incorrect session_id ",
-                          result_callback.session_id)
-                else:
-                    if result_callback.interaction_id in grammar_ids:
-                        print("## Got InteractionFinalResultsReadyMessage for grammar_id ",
-                              result_callback.interaction_id)
-                    elif result_callback.interaction_id == interaction_id:
-                        print("## Got InteractionFinalResultsReadyMessage for ASR interaction_id ",
-                              result_callback.interaction_id)
-                        # If we receive this message, it indicates the result is ready, we can stop streaming
-                        audio_stream_cancel.set()
-                        break
-
-        # Small pause between sent audio chunks (to emulate realtime streaming)
+    chunk_counter = 0
+    while more_bytes:
+        if audio_thread_stream_audio:
+            # the call to push audio needs to be done in the event loop created for lumenvox_api
+            # in order to do this from a different thread, and in a thread-safe way
+            # run_coroutine_threadsafe is being used
+            coroutine = lumenvox_api.audio_push_from_buffer(session_stream=session_stream,
+                                                             audio_buffer=audio_buffer)
+            future = asyncio.run_coroutine_threadsafe(coroutine, lumenvox_api.loop)
+            more_bytes = future.result(90)
+            chunk_counter += 1
+            print("sending audio chunk ", chunk_counter, " more bytes = ", str(more_bytes))
         time.sleep(0.1)
+        if audio_thread_stop:
+            break
+    print("audio streaming thread shutting down")
 
-    print('4. Completed streaming audio')
 
-    # Force calling InteractionFinalizeProcessing in case end-of-speech was not detected due to insufficient silence
-    api_helper.InteractionFinalizeProcessing(session_id=session_id, interaction_id=interaction_id)
+async def create_api_session(lumenvox_api,
+                             audio_ref: str,
+                             audio_format: int = None, sample_rate_hertz: int = None,
+                             chunk_size: int = 4000,
+                             deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                             ):
+    """
+    Creates LumenVox API session.
+    Also creates a separate thread to stream audio into the session
+    The audio thread will begin streaming audio when the global variable audio_thread_stream_audio is set to True
 
-    api_helper.wait_for_final_results(session_id=session_id, interaction_id=interaction_id)
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param audio_ref: String reference to audio file
+    @param chunk_size: Number of bytes to split audio data into
+    @param audio_format: Audio format for the session to use
+    @param sample_rate_hertz: Sample rate for session's audio
+    @param deployment_id: unique UUID of the deployment to use for the session
+      (default deployment id will be used if not specified)
+    @param operator_id: optional unique UUID can be used to track who is making API calls
+    @param correlation_id: optional UUID can be used to track individual API calls
+    @return: None
+    """
 
-    print('5. Final Results ready:', str(api_helper.result_ready))
+    # generate new session stream and session
+    session_stream, session_id = await lumenvox_api.session_init(deployment_id=deployment_id,
+                                                                 operator_id=operator_id,
+                                                                 correlation_id=correlation_id)
 
-    if api_helper.result_ready:
-        # Only attempt to parse the results_json if result_ready is True (otherwise results_json is not valid)
-        parsed_json = json.loads(api_helper.results_response.results_json)
-    else:
-        parsed_json = None
+    await lumenvox_api.session_set_inbound_audio_format(session_stream=session_stream,
+                                                        audio_format=audio_format, sample_rate_hertz=sample_rate_hertz)
 
-    api_helper.InteractionClose(session_id=session_id, interaction_id=interaction_id)
-    api_helper.SessionClose(session_id=session_id)
+    global audio_thread_stream_audio
+    audio_thread_stream_audio = False
 
-    return parsed_json
+    global audio_thread_stop
+    audio_thread_stop = False
+
+    _thread = Thread(target=push_audio_thread, args=(lumenvox_api, session_stream, audio_ref, chunk_size))
+    _thread.start()
+
+    return session_stream, session_id
+
+
+async def asr_transcription_session(lumenvox_api,
+                                    audio_ref: str,
+                                    language_code: str = None,
+                                    phrases: list = None,
+                                    phrase_list_settings: settings_msg.PhraseListSettings = None,
+                                    chunk_size: int = 4000,
+                                    audio_format: int = None, sample_rate_hertz: int = None,
+                                    deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                                    ):
+    """
+    Function to open session, and run test transcription interaction
+
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param audio_ref: String reference to audio file
+    @param language_code: Two or four character code to specify language used
+    @param chunk_size: Number of bytes to split audio data into
+    @param audio_format: Audio format for the session to use
+    @param deployment_id: unique UUID of the deployment to use for the session
+      (default deployment id will be used if not specified)
+    @param operator_id: optional unique UUID can be used to track who is making API calls
+    @param correlation_id: optional UUID can be used to track individual API calls
+    @return: None
+    """
+
+    # create session and set up audio streaming thread
+    session_stream, session_id = await create_api_session(lumenvox_api,
+                                                          audio_ref, audio_format, sample_rate_hertz, chunk_size,
+                                                          deployment_id, operator_id, correlation_id)
+
+    # run one transcription interaction
+    await asr_transcription_interaction(lumenvox_api, session_stream, language_code, phrases, phrase_list_settings)
+
+    # Signal the audio streaming thread to shut down, if still running
+    global audio_thread_stop
+    audio_thread_stop = True
+
+    await lumenvox_api.session_close_all(session_stream=session_stream)
+    lumenvox_api.set_streams_sets_to_none()
+
+
+async def asr_transcription_interaction(lumenvox_api, session_stream,
+                                        language_code: str = None,
+                                        phrases: list = None,
+                                        phrase_list_settings: settings_msg.PhraseListSettings = None,
+                                        ):
+    """
+    Function to run test transcription interaction
+
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param session_stream: Handle to the session stream
+    @param language_code: Two or four character code to specify language used
+    @param phrases: Optional words and phrase list to use when transcribing
+    @return: None
+    """
+
+    # set default language code if none is provided
+    if not language_code:
+        language_code = 'en-us'
+
+    # Use voice activity detection, an eos of 3200 will allow longer pauses between words
+    vad_settings = lumenvox_api.define_vad_settings(use_vad=True, eos_delay_ms=3200)
+
+    # audio will be streamed, any audio streamed after the interaction is created, will be processed
+    audio_consume_settings = lumenvox_api.define_audio_consume_settings(
+        audio_consume_mode=settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_STREAMING,
+        stream_start_location=
+        settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
+
+    # create a transcription interaction with supplied settings
+    await lumenvox_api.interaction_create_transcription(session_stream=session_stream, language=language_code,
+                                                        audio_consume_settings=audio_consume_settings,
+                                                        vad_settings=vad_settings,
+                                                        phrases=phrases,
+                                                        phrase_list_settings=phrase_list_settings)
+
+    # wait for response containing interaction ID to be returned
+    r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
+    interaction_id = r.interaction_create_transcription.interaction_id
+    print("interaction_id extracted from interaction_create_transcription", interaction_id)
+
+    # Signal the audio streaming thread to begin streaming audio
+    global audio_thread_stream_audio
+    audio_thread_stream_audio = True
+
+    # wait for final result message to be returned
+    result = await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
+
+    # Signal the audio streaming thread to stop streaming audio
+    audio_thread_stream_audio = False
+
+    await lumenvox_api.close_interaction_and_validate(session_stream=session_stream, interaction_id=interaction_id)
 
 
 if __name__ == '__main__':
-
     # Create and initialize the API helper object that will be used to simplify the example code
-    api_helper = LumenVoxSpeechApiHelper()
-    api_helper.initialize_speech_api_helper()
+    lumenvox_api = LumenVoxApiClient()
+    lumenvox_api.initialize_lumenvox_api()
 
-    # Audio sample courtesy of Open Speech Repository: https://www.voiptroubleshooter.com/open_speech/index.html
-    result = asr_transcription_common(api_helper=api_helper,
-                                      grammar_file_path='test_data/en_transcription.grxml',
-                                      audio_file='test_data/OSR_us_000_0037_8k.ulaw',
-                                      audio_format='STANDARD_AUDIO_FORMAT_ULAW_8KHZ',
-                                      language_code='en')
+    # the function asr_transcription_session creates session, and runs an interaction
+    # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so the the event loop
+    # to handle gRPC async messages is created
 
-    # Note that prior to final result, there are several PARTIAL RESULT CALLBACK messages showing partial
-    # results while the audio is being processed in realtime. The final result may contain a corrected version
-    # of the partial results, since it may have more context around words and phrases to improve final output.
-
-    print(">>>> result returned:\n", json.dumps(result, indent=4, sort_keys=True, ensure_ascii=False))
+    lumenvox_api.run_user_coroutine(
+        asr_transcription_session(lumenvox_api, language_code='en',
+                                  audio_ref='../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw',
+                                  chunk_size=4000,
+                                  ), )
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.
-    api_helper.shutdown_speech_api_helper()
+    lumenvox_api.shutdown_lumenvox_api_client()

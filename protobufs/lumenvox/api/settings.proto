@@ -1,0 +1,515 @@
+// Protocol Buffer File
+// This is the gRPC definition for Settings messages
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "lumenvox/api/optional_values.proto";
+
+option csharp_namespace = "LumenVox.Api.Settings";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "SettingsProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\Settings";
+
+
+// Optional settings to be used for the duration of a session for all
+// interactions created within the session.
+//
+// These can be overridden at the interaction level
+//
+// All settings are optional, not specifying a setting at any level means the
+// default or parent context's value will be used. As a rule, only settings
+// that need to be changed from default should be set explicitly
+//
+message SessionSettings {
+  // Whether the session data should be archived when closed, for tuning and
+  // other diagnostic purposes
+  // Default: false
+  OptionalBool archive_session = 1;
+
+  // Optional data (i.e. could be string, JSON, delimited lists, etc.) set by
+  // user, for external purposes. Not used by LumenVox
+  OptionalString custom_session_data = 2;
+
+  // Optional settings to be used for duration of session for all interactions
+  // created. These can be over-ridden at the interaction level
+  InteractionSettings interaction_settings = 3;
+
+  // Optional call identifier sting used for CDR tracking. This is often
+  // associated with the telephony call-id value or equivalent.
+  OptionalString call_id = 4;
+
+  // Optional channel identifier sting used for CDR tracking. This is often
+  // associated with a telephony/MRCP channel SDP value or equivalent.
+  repeated OptionalString channel_id = 5;
+
+  // Optional delay interval for archiving in seconds
+  // Session data will persist more in redis before being written to database
+  OptionalInt32 archive_session_delay_seconds = 6;
+
+  // Optional tag for logging. Reserved for future use.
+  repeated OptionalString logging_tag = 7;
+}
+
+message InteractionSettings {
+
+  // Optional settings related to all interactions
+  GeneralInteractionSettings general_interaction_settings = 1;
+
+  // Optional settings defining how audio is consumed/used by the interaction
+  AudioConsumeSettings audio_consume_settings = 3;
+
+  // Optional Voice Activity Detection settings for interaction
+  VadSettings vad_settings = 4;
+
+  // Optional grammar settings for interaction
+  GrammarSettings grammar_settings = 5;
+
+  // Optional recognition settings for interaction
+  RecognitionSettings recognition_settings = 6;
+
+  // Optional Call Progress Analysis settings for interaction
+  CpaSettings cpa_settings = 7;
+
+  // Optional Tone Detection (AMD) settings for interaction
+  AmdSettings amd_settings = 8;
+
+  // Optional settings specifying which text normalization steps should be
+  // performed on output of interaction.
+  NormalizationSettings normalization_settings = 10;
+  
+  // Optional settings specifying boost options for phrases
+  PhraseListSettings phrase_list_settings = 11;
+}
+
+// Settings that apply to all interaction types
+message GeneralInteractionSettings {
+  // When true (enabled), certain ASR and TTS data will not be logged.
+  // This provides additional security for sensitive data such as account
+  // numbers and passwords that may be used within applications. Anywhere
+  // that potentially sensitive data would have been recorded will be replaced
+  // with _SUPPRESSED in the logs.
+  // Default: false
+  OptionalBool secure_context = 1;
+
+  // Optional data (i.e. could be string, JSON, delimited lists, etc.) set by
+  // user, for external purposes. Not used by LumenVox
+  OptionalString custom_interaction_data = 2;
+
+  // Optional tag for logging. Reserved for future use.
+  repeated OptionalString logging_tag = 3;
+}
+
+// Settings related to SRGS grammar usage
+message GrammarSettings {
+
+  enum TagFormat {
+    TAG_FORMAT_UNSPECIFIED = 0;
+
+    // lumenvox/1.0 tag format
+    TAG_FORMAT_LUMENVOX_1 = 1;
+
+    // semantics/1.0 tag format
+    TAG_FORMAT_SEMANTICS_1 = 2;
+
+    // semantics/1.0-literals tag format
+    TAG_FORMAT_SEMANTICS_1_LITERALS = 3;
+
+    // semantics/1.0.2006 tag format
+    TAG_FORMAT_SEMANTICS_1_2006 = 4;
+
+    // semantics/1.0.2006-literals tag format
+    TAG_FORMAT_SEMANTICS_1_2006_LITERALS = 5;
+  }
+
+  // The default tag-format for loaded grammars if not otherwise specified.
+  // Default: TAG_FORMAT_SEMANTICS_1_2006
+  TagFormat default_tag_format = 1;
+
+  // Enables or disables the verification of a peer's certificate using a local
+  // certificate authority file upon HTTPS requests. Set to false (disabled) to
+  // skip verification for trusted sites.
+  // Default: true
+  OptionalBool ssl_verify_peer = 2;
+
+  // Maximum milliseconds to allow for grammar loading. If this is exceeded,
+  // a timeout error will be raised. Range 1000-2147483647 (~600 hours)
+  // Default: 200000 (~3.333 minutes)
+  OptionalInt32 load_grammar_timeout_ms = 3;
+}
+
+// Settings related to recognition results
+message RecognitionSettings {
+  // Maximum number of recognition hypotheses to be returned.
+  // Specifically, the maximum number of `NBest` messages within each
+  // `AsrInteractionResult`.
+  // Default: 1
+  OptionalInt32 max_alternatives = 1;
+
+  // Controls how aggressively the ASR trims leading silence from input audio.
+  // Range: 0 (very aggressive) to 1000 (no silence trimmed)
+  // Default: 970
+  OptionalInt32 trim_silence_value = 2;
+
+  // When true, partial results callbacks will be enabled for the interaction
+  // Default: false
+  OptionalBool enable_partial_results = 3;
+
+  // Confidence threshold. Range 0 to 1000; applies to grammar based asr interactions
+  // Default: 0
+  OptionalInt32 confidence_threshold = 4;
+}
+
+// Settings related to text Normalization results
+message NormalizationSettings {
+  // Set to true to enable inverse text normalization (going from spoken form
+  // → written form (e.g. twenty two → 22)
+  // Default: false
+  OptionalBool enable_inverse_text = 1;
+
+  // Set to true to enable punctuation and capitalization normalization
+  // Default: false
+  OptionalBool enable_punctuation_capitalization = 2;
+
+  // Set to true to enable redaction of sensitive information
+  // Default: false
+  OptionalBool enable_redaction = 3;
+}
+
+// Settings related to Voice Activity Detection (VAD)
+// VAD is used to begin audio processing once a person starts speaking and
+// is used to detect when a person has stopped speaking
+//
+message VadSettings {
+
+  // When `false`, all audio as specified in AudioConsumeSettings is used for
+  // processing.
+  //
+  // In streaming audio mode, InteractionFinalizeProcessing() would need be
+  // called to finish processing
+  //
+  // When `true`, VAD is used to determine when the speaker starts and stops
+  // speaking. When using VAD in batch audio mode, the engine will look for
+  // speech begin within the designated audio to process and will stop
+  // processing audio when end of speech is found, which may mean that all
+  // audio loaded is not processed.
+  OptionalBool use_vad = 1;
+
+
+  // Maximum silence, in ms, allowed while waiting for user input (barge-in)
+  // before a timeout is reported.
+  // Range: -1 (infinite) to positive integer number of milliseconds
+  // Default: -1 (infinite)
+  OptionalInt32 barge_in_timeout_ms = 3;
+
+  // After barge-in, STREAM_STATUS_END_SPEECH_TIMEOUT will occur if
+  // end-of-speech not detected in time specified by this property.
+  // This is different from the eos_delay_ms; This value represents the total
+  // amount of time a caller is permitted to speak after barge-in is detected.
+  // Range: a positive number of milliseconds or -1 (infinite)
+  // Default: -1 (infinite)
+  OptionalInt32 end_of_speech_timeout_ms = 4;
+
+  enum NoiseReductionMode {
+    // No change to setting
+    NOISE_REDUCTION_MODE_UNSPECIFIED = 0;
+
+    // Noise reduction disabled
+    NOISE_REDUCTION_MODE_DISABLED = 1;
+
+    // Default (recommended) noise reduction algorithm is enabled.
+    NOISE_REDUCTION_MODE_DEFAULT = 2;
+
+    // Alternate noise reduction algorithm. Similar to default, but we have
+    // seen varied results based on differing noise types and levels.
+    NOISE_REDUCTION_MODE_ALTERNATE = 3;
+
+    // Uses an adaptive noise reduction algorithm that is most suited to
+    // varying levels of background noise, such as changing car noise, etc.
+    NOISE_REDUCTION_MODE_ADAPTIVE = 4;
+  }
+
+  // Determines noise reduction mode.
+  // Default: NOISE_REDUCTION_DEFAULT
+  NoiseReductionMode noise_reduction_mode = 5;
+
+  // A higher value makes the VAD more sensitive towards speech, and less
+  // sensitive towards non-speech, which means that the VAD algorithm must be
+  // more sure that the audio is speech before triggering barge in.
+  // Raising the value will reject more false positives/noises. However, it
+  // may mean that some speech that is on the borderline may be rejected. This
+  // value should not be changed from the default without significant tuning
+  // and verification.
+  // Range: Integer value from 0 to 100
+  // Default: 50
+  OptionalInt32 bargein_threshold = 6;
+
+  // Milliseconds of silence after speech before processing begins.
+  // Range: A positive integer number of milliseconds
+  // Default: 800
+  OptionalInt32 eos_delay_ms = 7;
+
+  // Determines how much louder the speaker must be than the background noise
+  // in order to trigger barge-in. The smaller this value, the easier it will
+  // be to trigger barge-in.
+  // Range: Integer range from 0 to 100
+  // Default: 50
+  OptionalInt32 snr_sensitivity = 8;
+
+  // Accurate VAD depends on a good estimation of the acoustic environment. The
+  // VAD module uses the first couple frames of audio to estimate the acoustic
+  // environment, such as noise level. The length of this period is defined by
+  // this parameter.
+  // Range: A positive integer number of milliseconds.
+  // Default: 100
+  OptionalInt32 stream_init_delay = 9;
+
+  // The volume required to trigger barge-in. The smaller the value, the more
+  // sensitive barge-in will be. This is primarily used to deal with poor echo
+  // cancellation. By setting this value higher (less sensitive) prompts that
+  // are not properly cancelled will be less likely to falsely cancel barge-in.
+  // Range: Integer range from 0 to 100
+  // Default: 50
+  OptionalInt32 volume_sensitivity = 10;
+
+  // The length of audio to be wound back at the beginning of voice activity.
+  // This is used primarily to counter instances where barge-in does not
+  // accurately capture the very start of speech. The resolution of this
+  // parameter is 1/8 of a second.
+  // Range: A positive integer number of milliseconds
+  // Default: 480
+  OptionalInt32 wind_back_ms = 11;
+}
+
+// Settings related to Call Progress Analysis
+message CpaSettings {
+  // Maximum amount of speech for human residence classification
+  // Default: 1800
+  OptionalInt32 human_residence_time_ms = 1;
+
+  // Maximum amount of speech for human business classification. Human
+  // speech lasting longer than this will be classified as unknown speech
+  // Default: 3000
+  OptionalInt32 human_business_time_ms = 2;
+
+  // Maximum amount of silence to allow before human speech is detected. If
+  // This timeout is reached, the classification will be returned as unknown
+  // silence.
+  // Default: 5000
+  OptionalInt32 unknown_silence_timeout_ms = 3;
+
+  // Maximum amount of time the CPA algorithm is allowed to perform human or
+  // machine classification.
+  // Only use this if you understand the implications (lower accuracy).
+  // Default: 0 (disabled)
+  OptionalInt32 max_time_from_connect_ms = 4;
+}
+
+message PhraseListSettings {
+  // Probability score boost raises or lowers the probability the words or
+  // phrases are recognized. A negative value lowers the probability the
+  // word is returned in results.
+  // Range: -5 to 15
+  // Default: 0 
+  OptionalInt32 probability_boost = 2;
+}
+
+// Settings related to answering machine / tone detection
+//  and other tones such as FAX or SIT tone
+message AmdSettings {
+  // Enabled answering machine beep detection
+  // Default: true
+  OptionalBool amd_enable = 1;
+
+  // Which string is returned in response to an AMD beep detection
+  // Default: AMD
+  OptionalString amd_input_text = 2;
+
+  // Enable fax tone detection
+  // Default: true
+  OptionalBool fax_enable = 3;
+
+  // Which string is returned in response to a fax tone detection
+  // Default: FAX
+  OptionalString fax_input_text = 4;
+
+  // Enable SIT detection
+  // Default: true
+  OptionalBool sit_enable = 5;
+
+  // Which string is returned in response to specified SIT detection
+  // Default: "SIT REORDER LOCAL"
+  OptionalString sit_reorder_local_input_text = 6;
+
+  // Which string is returned in response to specified SIT detection
+  // Default: "SIT VACANT CODE"
+  OptionalString sit_vacant_code_input_text = 7;
+
+  // Which string is returned in response to specified SIT detection
+  // Default: "SIT NO CIRCUIT LOCAL"
+  OptionalString sit_no_circuit_local_input_text = 8;
+
+  // Which string is returned in response to specified SIT detection
+  // Default: "SIT INTERCEPT"
+  OptionalString sit_intercept_input_text = 9;
+
+  // Which string is returned in response to specified SIT detection
+  // Default: "SIT REORDER DISTANT"
+  OptionalString sit_reorder_distant_input_text = 10;
+
+  // Which string is returned in response to specified SIT detection
+  // Default: "SIT NO CIRCUIT DISTANT"
+  OptionalString sit_no_circuit_distant_input_text = 11;
+
+  // Which string is returned in response to specified SIT detection
+  // Default: "SIT OTHER"
+  OptionalString sit_other_input_text = 12;
+
+  // Enable busy tone detection
+  // Default: true
+  OptionalBool busy_enable = 13;
+
+  // Which string is returned in response to a busy tone detection
+  // Default: BUSY
+  OptionalString busy_input_text = 14;
+
+  // Maximum number of milliseconds the tone detection algorithm should listen
+  // for input before timing out.
+  OptionalInt32 tone_detect_timeout_ms = 15;
+}
+
+message AudioConsumeSettings {
+  // For multi-channel audio, this is the channel number being referenced.
+  // Range is from 0 to N. Default channel 0 will be used if not specified
+  OptionalInt32 audio_channel = 1;
+
+  enum AudioConsumeMode {
+    // No mode specified
+    AUDIO_CONSUME_MODE_UNSPECIFIED = 0;
+
+    // Specify streaming mode is used
+    AUDIO_CONSUME_MODE_STREAMING = 1;
+
+    // Specify batch mode is used
+    AUDIO_CONSUME_MODE_BATCH = 2;
+  }
+
+  // Select which audio mode is used
+  // Default: AUDIO_CONSUME_MODE_STREAMING
+  AudioConsumeMode audio_consume_mode = 2;
+
+  // Only used when AUDIO_CONSUME_MODE_STREAMING is used
+  enum StreamStartLocation {
+    // No location specified
+    STREAM_START_LOCATION_UNSPECIFIED = 0;
+
+    // Start processing from the beginning of the stream.
+    //
+    // Note: Only valid option for AUDIO_CONSUME_MODE_BATCH
+    STREAM_START_LOCATION_STREAM_BEGIN = 1;
+
+    // Start processing from the audio streamed after the API call
+    // InteractionBeginProcessing() was made.
+    //
+    // Note: Not valid for AUDIO_CONSUME_MODE_BATCH
+    STREAM_START_LOCATION_BEGIN_PROCESSING_CALL = 2;
+
+    // Start processing from the audio streamed after the interaction was
+    // created.
+    //
+    // Note: Not valid for AUDIO_CONSUME_MODE_BATCH
+    STREAM_START_LOCATION_INTERACTION_CREATED = 3;
+  }
+
+  // Specify where audio consume starts when "streaming" mode is used
+  // Default: STREAM_START_LOCATION_STREAM_BEGIN
+  StreamStartLocation stream_start_location = 3;
+
+  // Optional offset in milliseconds to adjust the audio start point.
+  // Range: Value in milliseconds, positive or negative.
+  // Default: 0
+  OptionalInt32 start_offset_ms = 4;
+
+  // Optional maximum audio to process. Value of 0 means process all audio sent
+  // Range: Positive value in milliseconds
+  // Default: 0
+  OptionalInt32 audio_consume_max_ms = 5;
+}
+
+message TtsInlineSynthesisSettings {
+  // Optional voice (if using simple text, or if not specified within SSML)
+  OptionalString voice = 1;
+
+  // The strength of the emphasis used in the voice during synthesis.
+  // Possible Values: "strong", "moderate", "none" or "reduced".
+  OptionalString synth_emphasis_level = 2;
+
+  // The pitch of the audio being synthesized.
+  // Possible Values: A number followed by "Hz", a relative change, or one of
+  // the following values: "x-low", "low", "medium", "high", "x-high", or
+  // "default". See the SSML standard for details.
+  OptionalString synth_prosody_pitch = 3;
+
+  // The contour of the audio being synthesized.
+  // Possible Values: Please refer to the SSML standard on pitch contour
+  // for details.
+  OptionalString synth_prosody_contour = 4;
+
+  // The speaking rate of the audio being synthesized.
+  // Possible Values: A relative change or "x-slow", "slow", "medium", "fast",
+  // "x-fast", or "default". See the SSML standard for details.
+  OptionalString synth_prosody_rate = 5;
+
+  // The duration of time it will take for the synthesized text to play.
+  // Possible Values: A time, such as "250ms" or "3s".
+  OptionalString synth_prosody_duration = 6;
+
+  // The volume of the audio being synthesized.
+  // Possible Values: A number, a relative change or one of: "silent", "x-soft",
+  // "soft", "medium", "loud", "x-loud", or "default". See the SSML
+  // specification for details.
+  OptionalString synth_prosody_volume = 7;
+
+  // The age of the voice used for synthesis.
+  // Possible Values: A non-negative integer.
+  OptionalString synth_voice_age = 8;
+
+  // The default TTS gender to use if none is specified.
+  // Possible Values: Either neutral (which uses the default), male, or female.
+  OptionalString synth_voice_gender = 9;
+}
+
+message LoggingSettings {
+
+  enum LoggingVerbosity {
+    // Logging verbosity is not specified
+    LOGGING_VERBOSITY_UNSPECIFIED = 0;
+
+    // Internal system events that are not usually observable
+    LOGGING_VERBOSITY_DEBUG = 1;
+
+    // Routine logging, such as ongoing status or performance
+    LOGGING_VERBOSITY_INFO = 2;
+
+    // Warnings and above only - service degradation or danger
+    LOGGING_VERBOSITY_WARNING = 3;
+
+    // Functionality is unavailable, invariants are broken, or data is lost
+    LOGGING_VERBOSITY_ERROR = 4;
+
+    // Only log exceptions and critical errors (not recommended)
+    LOGGING_VERBOSITY_CRITICAL = 5;
+  }
+
+  // Logging verbosity setting
+  // Default: LOGGING_VERBOSITY_INFO
+  LoggingVerbosity logging_verbosity = 1;
+}
+
+message ResetSettings {
+  // No additional fields needed
+}

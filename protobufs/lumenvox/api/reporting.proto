@@ -1,0 +1,660 @@
+// Reporting API Protocol Buffer File
+// This is the gRPC definition for the LumenVox Reporting API
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "google/rpc/status.proto";
+import "google/protobuf/timestamp.proto";
+import "lumenvox/api/common.proto";
+import "lumenvox/api/results.proto";
+import "lumenvox/api/settings.proto";
+import "lumenvox/api/audio_formats.proto";
+
+option csharp_namespace = "LumenVox.Api.Reporting";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "ReportingProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\Reporting";
+
+// ReportingAPIService
+//
+// The LumenVox Reporting API can be used to access various reporting resources
+//
+service ReportingAPIService {
+
+  //
+  // Used to analyze AnalysisSetFilterOptions and to notify user about number of
+  // sessions and interactions which are going to be included into analysis.
+  // This request is optional, and AnalysisSet can be created without this one being called.
+  //
+  rpc AnalysisSetPreCreate(AnalysisSetPreCreateRequest)
+      returns (AnalysisSetPreCreateResponse);
+
+  //
+  // Creates an analysis set based on the requested filter. There are AnalysisSetFilterOptions as part of request for various
+  // filtering adjustments like: start/end time, type, status etc.
+  //
+  rpc AnalysisSetCreate(AnalysisSetCreateRequest)
+      returns (AnalysisSetCreateResponse);
+
+  //
+  // Retrieves analysis set by ID returned from AnalysisSetCreate method call.
+  // analysis set can be requested immediately after being created. Check its
+  // status field AnalysisSetStatus for creating progress.
+  //
+  rpc AnalysisSetGet(AnalysisSetGetRequest)
+      returns (AnalysisSetGetResponse);
+
+  //
+  // Deletes an AnalysisSet
+  //
+  rpc AnalysisSetDelete(AnalysisSetDeleteRequest)
+      returns (AnalysisSetDeleteResponse);
+
+  //
+  // Returns a list of some of AnalysisSet fields for table view.
+  // Classic pagination is used  where you need to provide page size and starting point
+  // to get only limited data set.
+  //
+  rpc AnalysisSetList(AnalysisSetListRequest)
+      returns (AnalysisSetListResponse);
+
+  //
+  // Retrieves data from the archive by its storage_id field.
+  //
+  rpc RetrieveArchiveData(RetrieveArchiveDataRequest)
+      returns (RetrieveArchiveDataResponse);
+
+  //
+  // RetrieveStorageId retrieves the storage_id from archive by its hash value.
+  //
+  rpc RetrieveStorageId(RetrieveStorageIdRequest)
+      returns (RetrieveStorageIdResponse);
+
+  //
+  // Returns a list of some of interactions within analysis set.
+  // Classic pagination is used where you need to provide page size and starting point
+  // to get only limited data set.
+  //
+  rpc InteractionList(InteractionAnalysisListRequest)
+      returns (InteractionAnalysisListResponse);
+
+  //
+  // Retrieves one interaction by ID.
+  // Interaction can be requested immediately after analysis set is created.
+  //
+  rpc InteractionGet(InteractionAnalysisGetRequest)
+      returns (InteractionAnalysisGetResponse);
+
+  //
+  // Updates the interaction.
+  // Interaction can be updated in order to test different
+  // parameters setting for interaction processing.
+  //
+  rpc InteractionUpdate(InteractionAnalysisUpdateTranscriptionRequest)
+      returns (InteractionAnalysisUpdateTranscriptionResponse);
+
+  //
+  // Returns license file of used third party components
+  //
+  rpc GetThirdPartyLicenseAttribution(GetThirdPartyLicenseAttributionRequest)
+      returns (GetThirdPartyLicenseAttributionResponse);
+
+  //
+  // Returns license usage report for specified deployment
+  //
+  rpc UsageReport(UsageReportRequest) returns (UsageReportResponse);
+
+  //
+  // Returns license usage snapshots for specified deployment in specified period
+  //
+  rpc UsageSnapshot(UsageSnapshotRequest) returns (UsageSnapshotResponse);
+}
+
+// ======== messages below  ===============================================
+
+//
+// Creates a request / filter for analysis set retrieval 
+//
+message AnalysisSetListRequest {
+  // Number of records per page (optional). 
+  // Accepted values 1-100, default 10
+  uint32 page_size = 1;
+  // Records offset for applied filter (optional), default 0
+  uint32 starting_at = 2;
+  // Analysis set list order (optional), default created_date
+  repeated AnalysisSetListOrder list_order = 3;
+  // Additional filtering options (optional, e.g. by type or language...)
+  AnalysisSetFilterOptions filter = 4;
+
+  // Enum with available sorting fields
+  enum AnalysisSetListOrder {
+    // Order by creation date ascending
+    ANALYSIS_SET_LIST_ORDER_CREATED_DATE = 0;
+    // Oreder by creation date descending
+    ANALYSIS_SET_LIST_ORDER_CREATED_DATE_DESC = 1;
+    // Order by the number of sessions ascending
+    ANALYSIS_SET_LIST_ORDER_NUM_SESSIONS = 2;
+    // Order by the number of sessions descending
+    ANALYSIS_SET_LIST_ORDER_NUM_SESSIONS_DESC = 3;
+    // Order by the number of interactions ascending
+    ANALYSIS_SET_LIST_ORDER_NUM_INTERACTIONS = 4;
+    // Order by the number of interactions descending
+    ANALYSIS_SET_LIST_ORDER_NUM_INTERACTIONS_DESC = 5;
+    // Order by interaction status ascending
+    ANALYSIS_SET_LIST_ORDER_STATUS = 6;
+    // Order by interaction status descending
+    ANALYSIS_SET_LIST_ORDER_STATUS_DESC = 7;
+  }
+}
+
+//
+// Returns a list of analysis sets
+//
+message AnalysisSetListResponse {
+  // The list of requested analysis sets
+  repeated AnalysisSet analysis_set_list = 1;
+  // The number of analysis sets in the response
+  uint32 total_number_of_matched = 2;
+}
+
+//
+// Requests the number of interactions and sessions generated by an AnalysisSetCreate filter
+//
+message AnalysisSetPreCreateRequest {
+  // Analysis set filter
+  AnalysisSetFilterOptions filter_options = 1;
+}
+
+//
+// Returns the number of sessions and interactions generated by an AnalysisSetCreate filter
+//
+message AnalysisSetPreCreateResponse {
+  // Number of sessions
+  uint32 sessions_extract_needed = 1;
+  // Number of interactions
+  uint32 interactions_extract_needed = 2;
+}
+
+//
+// Creates an analysis set based on the requested filter
+//
+message AnalysisSetCreateRequest {
+  // Creation filter
+  AnalysisSetFilterOptions filter_options = 1;
+  // The name (description) of the new analysis set created
+  string analysis_set_name = 2;
+}
+
+//
+// Returns the new created analysis set identifier
+//
+message AnalysisSetCreateResponse {
+  // UUID of the new analysis set created
+  string analysis_set_id = 1;
+}
+
+//
+// Deletes an existing analysis set
+//
+message AnalysisSetDeleteRequest {
+  // UUID of the target analysis set
+  string analysis_set_id = 1;
+}
+
+//
+// Empty response for deletion operation
+//
+message AnalysisSetDeleteResponse {
+}
+
+//
+// Request for analysisSet retrieval
+//
+message AnalysisSetGetRequest {
+  // UUID of the target analysis set
+  string analysis_set_id = 1;
+}
+
+//
+// Returns the requested analysis set
+//
+message AnalysisSetGetResponse {
+  // Requested analysis set
+  AnalysisSet analysis_set = 2;
+}
+
+// 
+// Creates a request for analysis set retrieval based on predefined filters
+//
+message InteractionAnalysisListRequest {
+  // Identifier of analysis set (required)
+  string analysis_set_id = 1;
+  // Page size, accepted values 1-100, default 10 (optional)
+  uint32 page_size = 2;
+  // Records offset for applied filter, default 0 (optional)
+  uint32 starting_at = 3;
+  // Set analysis set order, default created_date (optional)
+  repeated InteractionAnalysisListOrder list_order = 4;
+  // Additional filtering options (e.g. by type or language...) (optional)
+  InteractionAnalysisFilterOptions filter = 5;
+
+  // Enum with the sorting fields
+  enum InteractionAnalysisListOrder {
+    // Order by interaction start date ascending
+    INTERACTION_ANALYSIS_LIST_ORDER_START_TIME = 0;
+    // Order by interaction start date descending
+    INTERACTION_ANALYSIS_LIST_ORDER_START_TIME_DESC = 1;
+    // Order by interaction end date ascending
+    INTERACTION_ANALYSIS_LIST_ORDER_END_TIME = 2;
+    // Order by interaction end date descending
+    INTERACTION_ANALYSIS_LIST_ORDER_END_TIME_DESC = 3;
+    // Can be extended depending on requirements
+  }
+}
+
+//
+// Defines the Interaction filter within an analysis set
+//
+message InteractionAnalysisFilterOptions {
+  // Lumenvox session identifier
+  string session_id = 1;
+  // Start date time
+  google.protobuf.Timestamp start_timestamp = 2;
+  // End date time
+  google.protobuf.Timestamp end_timestamp = 3;
+  // Include selected grammars
+  string grammar_hash = 4;
+  // Include selected ssml
+  string ssml_hash = 5;
+}
+
+//
+// Returns a filtered list of interactions within selected analysis set
+//
+message InteractionAnalysisListResponse {
+  // List of Interactions
+  repeated InteractionDetails interaction_list = 1;
+  // Total number of entries in the list
+  uint32 total_number_of_matched = 2;
+  // Total number of transcribed entries in the list
+  uint32 total_number_of_transcribed = 3;
+}
+
+//
+// Creates a request for interaction details retrieval
+//
+message InteractionAnalysisGetRequest {
+  // UUID of the interaction
+  string interaction_id = 1;
+  // UUID for the analysis set
+  string analysis_set_id = 2;
+}
+
+//
+// Returns the InteractionDetails for requested interaction / analysis set
+//
+message InteractionAnalysisGetResponse {
+  // Interaction details message
+  InteractionDetails interaction = 1;
+}
+
+//
+// Updates the transcription for an asr interaction
+//
+message InteractionAnalysisUpdateTranscriptionRequest {
+  // Update transcription message
+  InteractionAnalysisUpdateTranscription interactionAnalysis = 1;
+}
+
+//
+// Updates asr transcription response
+//
+message InteractionAnalysisUpdateTranscriptionResponse {
+  // Operation status
+  google.rpc.Status status = 1;
+  // Product interaction within a session
+  InteractionDetails interaction = 2;
+}
+
+
+// Enum with interaction analysis statuses
+enum InteractionAnalysisStatus {
+  // No transcription
+  INTERACTION_ANALYSIS_STATUS_NO_TRANSCRIPT = 0; 
+  // Correct
+  INTERACTION_ANALYSIS_STATUS_CORRECT = 1;
+  // Incorect
+  INTERACTION_ANALYSIS_STATUS_INCORRECT = 2;
+  // Out of Grammar
+  INTERACTION_ANALYSIS_STATUS_OOG = 3;
+  // Out of Coverage
+  INTERACTION_ANALYSIS_STATUS_OOC = 4;
+  // SI Match
+  INTERACTION_ANALYSIS_STATUS_SI_MATCH = 5;
+  // Failure for load 
+  INTERACTION_ANALYSIS_STATUS_LOAD_FAILURE = 6;
+  // Failure for decode
+  INTERACTION_ANALYSIS_STATUS_DECODE_FAILURE = 7;
+  // No input
+  INTERACTION_ANALYSIS_STATUS_NO_INPUT = 8;
+  // No input - correct
+  INTERACTION_ANALYSIS_STATUS_CORRECT_NO_INPUT = 9;
+  // No input - incorrect
+  INTERACTION_ANALYSIS_STATUS_INCORRECT_NO_INPUT = 10;
+}
+
+//
+// Describes one interaction
+//
+message InteractionDetails {
+  // New interaction UUID
+  string id = 1;
+  // Analysis set uuid
+  string analysis_set_id = 2;
+  // Original session identifier
+  string session_id = 3;
+  // Original interaction identifier
+  string interaction_id = 4;
+  // Base or Original Interaction type: ASR, TTS
+  InteractionType main_type = 5;
+  // Analysis status
+  InteractionAnalysisStatus status = 6;
+  // Audio channel identifier
+  uint32 channel_id = 7;
+  // Audio format
+  AudioFormat audio_format = 8;
+  // Error
+  string error = 9;
+  // Processing start timestamp
+  google.protobuf.Timestamp start_timestamp = 10;
+  // Processing end timestamp
+  google.protobuf.Timestamp end_timestamp = 11;
+  // Transcribed text
+  string transcript_text = 12;
+  // Transcribed semantic
+  string transcript_semantic = 13;
+  // Original interaction result
+  InteractionResultSet original_result = 14;
+  // Tuned interaction result
+  InteractionResultSet tuned_result = 15;
+  // Converted Interaction type: CPA, TTS
+  InteractionType type = 20;
+  // Interaction SubType
+  InteractionSubType sub_type = 21;
+
+}
+
+//
+// Describes an interaction result with current settings and grammars
+//
+message InteractionResultSet{
+  // Interaction settings
+  InteractionSettings settings = 1;
+  // Returned text
+  string text = 2;
+  // Returned semantic
+  string semantic = 3;
+  // Confidence
+  uint32 score = 4;
+  // Grammars used
+  repeated string grammar_hash = 5;
+  // Ssmls used
+  repeated string ssml_hash = 6;
+  // Interaction result
+  Result interaction_result = 7;
+  // Decode time
+  uint32 decode_time = 8;
+  // Confidence Threshold
+  float confidence_threshold = 9;
+  // Interaction Request
+  string interaction_request = 10;  
+  // Final status of the interaction
+  FinalResultStatus final_result_status = 11;
+  // Interaction Events
+  repeated LogEvent log_events = 12;
+}
+
+//
+// Update asr transcription message
+//
+message InteractionAnalysisUpdateTranscription {
+  // UUID for interaction
+  string interaction_id = 1;
+  // UUID of analysis set
+  string analysis_set_id = 2;
+  // New transcription value
+  string transcript_text = 3;
+}
+
+//
+// Describes an analysis set
+//
+message AnalysisSet {
+  // UUID for the current analysis set
+  string analysis_set_id = 1;
+  // Name or description for the analysis set
+  string description =3;
+  // Creation timestamp
+  google.protobuf.Timestamp created_date = 4;
+  // Interaction filter definition
+  string filter_json = 5;
+  // Number of sessions included in the analysis set
+  uint32 num_sessions = 6;
+  // Number of interactions included in the analysis set
+  uint32 num_interactions = 7;
+  // Current status for the analysis set creation as json
+  string job_status_json = 8;
+  // Short description of the filter used
+  string filter_summary=9;
+  // Current status for the analysis set
+  AnalysisSetStatus analysis_set_status =10;
+  // Current settings used
+  string settings_json = 11;
+  // Analysis set description as a json string
+  string analysis_json = 12;
+
+  // Describes the possible statuses for an analysis set
+  enum AnalysisSetStatus{
+    // Not yet initialized
+    ANALYSIS_SET_STATUS_UNINITIALIZED = 0;
+    // Create operation is in progress
+    ANALYSIS_SET_STATUS_CREATING = 1;
+    // Created sucessfuly
+    ANALYSIS_SET_STATUS_READY = 2;
+    // Tuning in progress
+    ANALYSIS_SET_STATUS_WORKING = 3;
+    // Deleted
+    ANALYSIS_SET_STATUS_DELETED = 4;
+    // Deletion in progress
+    ANALYSIS_SET_STATUS_ERASING = 5;
+  }
+}
+
+//
+// Defines a filter for analysis set creation
+//
+message AnalysisSetFilterOptions {
+
+  // Start timestamp for the interval
+  google.protobuf.Timestamp start_timestamp = 2;
+  // End timestamp for the interval
+  google.protobuf.Timestamp end_timestamp = 3;
+  // Interaction type filter
+  InteractionType interaction_type = 4;
+  // Interaction SubType
+  InteractionSubType sub_type = 5;
+  // Interaction status filter
+  FinalResultStatus final_result_status = 6;
+  // Interaction language filter
+  string language_string = 7;
+  // Specific grammars filter
+  string grammar_hash = 8;
+}
+
+// Data types for binary storage
+enum DataType {
+  // Undefined
+  DATA_TYPE_UNDEFINED = 0;
+  // Audio 
+  DATA_TYPE_AUDIO = 1;
+  // Voice print
+  DATA_TYPE_MODEL = 2;
+  // Voice print feature
+  DATA_TYPE_FEATURE = 3;
+  // Audio hash
+  DATA_TYPE_HASH = 4;
+  // Ssml
+  DATA_TYPE_SSML = 5;
+  // Grammar
+  DATA_TYPE_GRAMMAR = 6;
+}
+
+//
+// Describes a request for storage identifier
+//
+message RetrieveStorageIdRequest {
+  // Data type to be retrieved
+  DataType type = 1;
+  // Hash of the data
+  string hash = 2;
+  // Session identifier
+  string session_id = 3;
+  // Audio chanel
+  int32 channel_id = 4;
+}
+
+//
+// Returns the binary storage UUID
+//
+message RetrieveStorageIdResponse {
+  // Binary storage UUID
+  string storage_id = 1;
+}
+
+//
+// Request for binary data retrieval
+//
+message RetrieveArchiveDataRequest {
+  // Storage identifier for the binary data
+  string storage_id = 1;
+}
+
+//
+// Returns the binary data
+//
+message RetrieveArchiveDataResponse {
+  // Binary data
+  ArchiveEntry archive_entry = 1;
+}
+
+//
+// Describes the binary data entry structure
+//
+message ArchiveEntry {
+  // Binary storage identifier
+  string storage_id = 1;
+  // Deployment identifier
+  string deployment_id = 2;
+  // Associated tag for the binary data
+  string tag = 3;
+  // Binary data
+  bytes data = 4;
+  // Type of the binary data
+  DataType data_type = 5;
+}
+
+//
+// Request for ThirdPartyLicenses
+//
+message GetThirdPartyLicenseAttributionRequest {
+  // Currently no fields required
+}
+
+//
+// Response for ThirdPartyLicenses request
+//
+message GetThirdPartyLicenseAttributionResponse {
+  // Text for ThirdPartyLicense description
+  string third_party_licenses = 1;
+}
+
+//
+// Report request for current transaction usages
+//
+message UsageReportRequest {
+  // Optional component filter (all components returned if not specified)
+  string component = 1;
+}
+
+//
+// Returns usage report
+//
+message UsageReportResponse {
+  // milliseconds of time (duration) of session/deployment
+  uint32 session_ms = 3;
+
+  // milliseconds of audio streamed into session/deployment.
+  uint32 session_audio_ms = 4;
+
+  //map of license usage metadata aggregated for single session.
+  map<string, ComponentLicenseUsage> license_usage = 5;
+}
+
+//ComponentLicenseUsage
+
+//
+// Describes component for license usage
+//
+message ComponentLicenseUsage {
+  // number of operations for this component
+  uint32 usage_count = 1;
+
+  // milliseconds used for this component
+  uint32 usage_ms = 2;
+}
+
+
+
+// UsageSnapshotRequest
+//
+// Report request for snapshot transaction usages
+//
+message UsageSnapshotRequest {
+  // Optional component filter (all components returned if not specified)
+  string component = 1;
+
+  // Starting timestamp for filter
+  google.protobuf.Timestamp start_timestamp = 2;
+
+  // Ending timestamp for filter
+  google.protobuf.Timestamp end_timestamp = 3;
+}
+
+//
+// Response for snapshot usage
+//
+message UsageSnapshotResponse {
+  // Array of usage snapshot report information, one element per snapshot
+  // Note that each snapshot may contain multiple ComponentData entries
+  repeated SnapshotData snapshot_data = 1;
+}
+
+//
+// Describes the snapshot data structure
+//
+message SnapshotData {
+  // Deployment ID
+  string deployment_id = 1;
+  // Snapshot UUID (primary key for snapshot database table)
+  string snapshot_uuid = 2;
+  // Snapshot created (unix timestamp)
+  int64 created_date = 3;
+  // Usage report snapshot generated at created_date
+  // Array of usage report information, one element per component
+  repeated ComponentLicenseUsage component_license_usage = 4;
+}
