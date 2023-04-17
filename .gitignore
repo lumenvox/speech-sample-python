@@ -7,9 +7,6 @@ gen
 venv/
 __pycache__/
 
-# Generated proto stub files
-lumenvox/
-
 # Possible certificates
 *.crt
 *.pem
