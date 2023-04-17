@@ -1,0 +1,310 @@
+// API Protocol Buffer File
+// This is the gRPC definition for common messages
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "google/rpc/status.proto";
+import "google/protobuf/timestamp.proto";
+import "lumenvox/api/optional_values.proto";
+
+option csharp_namespace = "LumenVox.Api.Common";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "CommonProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\Common";
+
+
+message AudioRequestMessage {
+  oneof audio_request {
+    // Streamed binary audio data to be added to the session audio resource
+    AudioPushRequest audio_push = 1;
+
+    // Returns a block of audio data from an audio resource.
+    AudioPullRequest audio_pull = 2;
+  }
+}
+
+message AudioPushRequest {
+  // Note that SessionInboundAudioFormatRequest should be called before
+  // using this message, so that the audio format is defined
+
+  // Binary audio data to be added to the audio resource
+  bytes audio_data = 1;
+}
+
+message DtmfPushRequest {
+  // ASR interaction to associate this dtmf_key with
+  string interaction_id = 1;
+
+  // DTMF key press to be added to interaction stream for processing.
+  // Valid keys are 0-9, A-F, *, #
+  string dtmf_key = 2;
+}
+
+message AudioPullRequest {
+  // Id of the audio requested (Note that this could be session_id to request
+  // the inbound audio resource)
+  string audio_id = 1;
+
+  // For multi-channel audio, this is the channel number being referenced.
+  // Range is from 0 to N. Default channel 0 will be used if not specified
+  OptionalInt32 audio_channel = 2;
+
+  // Number of milliseconds from the beginning of the audio to return.
+  // Default is from the beginning
+  OptionalInt32 audio_start = 3;
+
+  // Maximum number of milliseconds to return.
+  // A zero value returns all available audio (from requested start point).
+  // Default is all audio, from start point
+  OptionalInt32 audio_length = 4;
+}
+
+message AudioPullResponse {
+  // Binary audio data that was requested
+  bytes audio_data = 1;
+
+  // For multi-channel audio, this is the channel number being referenced.
+  OptionalInt32 audio_channel = 2;
+
+  // In case of large audio, data will be split and there will be multiple AudioPullResponse
+  // messages. final_data_chunk field is set to true for the last message
+  bool final_data_chunk = 3;
+}
+
+message Grammar {
+  // Note that all builtin grammars are language-specific
+  enum BuiltinGrammar {
+    // Undefined built-in grammar
+    BUILTIN_GRAMMAR_UNSPECIFIED = 0;
+
+    // "yes" => true
+    BUILTIN_GRAMMAR_BOOLEAN = 1;
+
+    // "one dollar ninety seven" => USD1.97
+    BUILTIN_GRAMMAR_CURRENCY = 2;
+
+    // "march sixteenth nineteen seventy nine" => 19790316
+    BUILTIN_GRAMMAR_DATE = 3;
+
+    // "one two three four" => 1234
+    BUILTIN_GRAMMAR_DIGITS = 4;
+
+    // "three point one four one five nine two six" => 3.1415926
+    BUILTIN_GRAMMAR_NUMBER = 5;
+
+    // "eight five eight seven oh seven oh seven oh seven" => 8587070707
+    BUILTIN_GRAMMAR_PHONE = 6;
+
+    // "six o clock" => 0600
+    BUILTIN_GRAMMAR_TIME = 7;
+  }
+
+  // Method of loading the specified grammar
+  oneof grammar_load_method {
+    // A grammar URL to be loaded
+    string grammar_url = 1;
+
+    // A string containing the raw grammar text
+    string inline_grammar_text = 2;
+
+    // Reference to a previously defined "global" grammar
+    // Note: label must consist of letters, digits, hyphens, underscores only
+    string global_grammar_label = 3;
+
+    // Reference to a previously defined "session" grammar
+    // Note: label must consist of letters, digits, hyphens, underscores only
+    string session_grammar_label = 4;
+
+    // Reference to a "builtin" voice grammar
+    BuiltinGrammar builtin_voice_grammar = 5;
+
+    // Reference to a "builtin" DTMF grammar
+    BuiltinGrammar builtin_dtmf_grammar = 6;
+  }
+
+  // Optional label assigned to grammar, used for error reporting
+  // Note: label must consist of letters, digits, hyphens, underscores only
+  OptionalString label = 7;
+}
+
+//
+// Message used to signal events over the course of Voice Activity Detection
+// processing.
+//
+// The audio_offset will signify at what point within the session audio
+// resource the event occurred.
+//
+message VadEvent {
+  // The interaction object being referenced
+  string interaction_id = 1;
+
+  enum VadEventType {
+    // Undefined VAD event type
+    VAD_EVENT_TYPE_UNSPECIFIED = 0;
+
+    // VAD begins processing audio
+    VAD_EVENT_TYPE_BEGIN_PROCESSING = 1;
+
+    // Barge-in occurred, audio that will be processed by the ASR starts here.
+    // This notification might be useful to stop prompt playback for example
+    VAD_EVENT_TYPE_BARGE_IN = 2;
+
+    // End-of-speech occurred, no further audio will be processed by VAD for
+    // the specified interaction. If the setting
+    // VadSettings.auto_finalize_on_eos is true, the ASR will immediately finish
+    // processing audio at this point
+    VAD_EVENT_TYPE_END_OF_SPEECH = 3;
+
+    // VAD timed out waiting for audio barge-in (start-of-speech). The audio
+    // manager will no longer process audio for this interaction.
+    VAD_EVENT_TYPE_BARGE_IN_TIMEOUT = 4;
+
+    // VAD timed out waiting for audio barge-out (end-of-speech). The audio
+    // manager will no longer process audio for this interaction.
+    VAD_EVENT_TYPE_END_OF_SPEECH_TIMEOUT = 5;
+
+    // VAD has reached audio_consume_max_ms before barge-in has occurred.
+    VAD_EVENT_TYPE_END_OF_AUDIO_BEFORE_BARGEIN = 6;
+
+    // VAD has reached audio_consume_max_ms before barge-out (end-of-speech)
+    // has occurred.
+    VAD_EVENT_TYPE_END_OF_AUDIO_AFTER_BARGEIN = 7;
+  }
+
+  // The type of event this message represents
+  VadEventType vad_event_type = 2;
+
+  // The offset in milliseconds from the beginning of the audio resource that
+  // this event occurred
+  OptionalInt32 audio_offset = 3;
+}
+
+message PhraseList {
+  // The label of a previously defined global phrase list
+  string phrase_list_label = 1;
+}
+
+//
+// List of all Interaction types.
+enum InteractionType {
+  // This is not valid type. Indicating empty gRPC message.
+  INTERACTION_TYPE_UNSPECIFIED = 0;
+  // ASR processing interaction
+  INTERACTION_TYPE_ASR = 2;
+  // TTS processing interaction
+  INTERACTION_TYPE_TTS = 3;
+  // Validate grammar content. Can be url, inline or file reference (label)
+  INTERACTION_TYPE_GRAMMAR_PARSE = 4;
+  // Normalization interaction type
+  INTERACTION_TYPE_NORMALIZATION = 5;
+  // Call process analysis interaction type
+  INTERACTION_TYPE_CPA = 6;
+  // Answering machine detection interaction type
+  INTERACTION_TYPE_AMD = 7;
+  // ASR transcription interaction type
+  INTERACTION_TYPE_ASR_TRANSCRIPTION = 8;
+}
+
+//
+// List of all interaction sub-types
+enum InteractionSubType{
+  // This is not valid type. Indicating empty gRPC message.
+  INTERACTION_SUB_TYPE_UNSPECIFIED = 0;
+  // Call process analysis interaction type with grammars
+  INTERACTION_SUB_TYPE_GRAMMAR_BASED_CPA = 1;
+  // Answering machine detection interaction type with grammars
+  INTERACTION_SUB_TYPE_GRAMMAR_BASED_AMD = 2;
+  // ASR transcription interaction with multiple grammars
+  INTERACTION_SUB_TYPE_ENHANCED_TRANSCRIPTION = 3;
+  // ASR continuous transcription 
+  INTERACTION_SUB_TYPE_CONTINUOUS_TRANSCRIPTION = 4;
+}
+
+//
+// List of all Interaction statuses.
+enum InteractionStatus {
+  // This status is not expected or valid to happen. Indicating empty message.
+  INTERACTION_STATUS_UNSPECIFIED = 0;
+  // Interaction is in created only state, no additional processing is done yet.
+  INTERACTION_STATUS_CREATED = 1;
+  // Interaction results are ready. Most results are sent automatically when ready.
+  INTERACTION_STATUS_RESULTS_READY = 2;
+  // Used to indicated successfully closed interaction state
+  INTERACTION_STATUS_CLOSED = 3;
+
+  // Audio processing not started yet. Waiting on grammars to be loaded.
+  INTERACTION_STATUS_ASR_WAITING_ON_GRAMMARS = 101;
+  // Audio processing not started yet. Waiting on BARGE_IN event from VAD
+  INTERACTION_STATUS_ASR_WAITING_ON_BARGIN = 102;
+  // Initial status or post BARGE_IN status of interaction, stream processing not started yet
+  INTERACTION_STATUS_ASR_STREAM_REQUEST = 103;
+  // Batch mode, waiting for STOP request
+  INTERACTION_STATUS_ASR_STOP_REQUESTED_WAITING = 104;
+  // ASR started reading stream
+  INTERACTION_STATUS_ASR_STREAM_STARTED = 105;
+  // Set in case of Finalize request
+  INTERACTION_STATUS_ASR_STREAM_STOP_REQUESTED = 106;
+  // Used for CPA and AMD interactions
+  INTERACTION_STATUS_ASR_WAITING_FOR_CPA_AMD_RESPONSE = 107;
+  // No VAD event or interaction finalize, ASR processing timed out
+  INTERACTION_STATUS_ASR_TIMEOUT = 109;
+
+  // TTS processing
+  INTERACTION_STATUS_TTS_PROCESSING = 200;
+
+  // Grammar(s) loading in progress, interaction not started yet
+  INTERACTION_STATUS_GRAMMAR_PARSE_WAITING_ON_GRAMMARS = 400;
+  // Interaction processing in progress
+  INTERACTION_STATUS_GRAMMAR_PARSE_REQUESTED_PROCESSING = 401;
+
+  // Normalize Text
+  INTERACTION_STATUS_NORMALIZE_TEXT_REQUESTED_PROCESSING = 500;
+
+  // Asr Transcription
+  INTERACTION_STATUS_ASR_TRANSCRIPTION_WAITING_ON_PHRASE_LISTS = 600;
+}
+
+//
+// List of all grammar modes.
+enum GrammarMode {
+  // Mode not specified
+  GRAMMAR_MODE_UNSPECIFIED = 0;
+  // Voice mode
+  GRAMMAR_MODE_VOICE = 1;
+  // DTMF mode
+  GRAMMAR_MODE_DTMF = 2;
+  // Voice and DTMF mode
+  GRAMMAR_MODE_VOICE_AND_DTMF = 3;
+}
+
+message SessionEvent {
+  // Optional interaction object being referenced
+  OptionalString interaction_id = 2;
+
+  // String containing event information
+  google.rpc.Status status_message = 3;
+}
+
+// Event can be either a VadEvent or a SessionEvent
+message Event {
+  oneof event {
+    // Event returned form Vad (AudioManager)
+    VadEvent vad_event = 1;
+
+    // Session Events used to report errors to the API user
+    SessionEvent session_event = 2;
+  }
+}
+
+// a single event with timestamp to be logged to the database
+// the LogEvent will be returned via reporting api
+message LogEvent {
+  //Log Event Timestamp (UTC)
+  google.protobuf.Timestamp time_stamp= 1;
+  Event event = 2;
+}

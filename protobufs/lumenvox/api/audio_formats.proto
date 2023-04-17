@@ -1,0 +1,54 @@
+// Protocol Buffer File
+// This is the gRPC definition for AudioFormat messages
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+import "lumenvox/api/optional_values.proto";
+
+option csharp_namespace = "LumenVox.Api.AudioFormats";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "AudioFormatsProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\AudioFormats";
+
+
+message AudioFormat {
+  // Specification for the audio format
+  //
+  // Not all standard formats are supported in all cases. Different operations
+  // may natively handle a subset of the total audio formats.
+  //
+  enum StandardAudioFormat {
+    STANDARD_AUDIO_FORMAT_UNSPECIFIED = 0;
+
+    // Uncompressed 16-bit signed little-endian samples (Linear PCM).
+    STANDARD_AUDIO_FORMAT_LINEAR16 = 1;
+
+    // 8-bit audio samples using G.711 PCMU/mu-law.
+    STANDARD_AUDIO_FORMAT_ULAW = 2;
+
+    // 8-bit audio samples using G.711 PCMA/a-law.
+    STANDARD_AUDIO_FORMAT_ALAW = 3;
+
+    // WAV formatted audio
+    STANDARD_AUDIO_FORMAT_WAV = 4;
+
+    // FLAC formatted audio
+    STANDARD_AUDIO_FORMAT_FLAC = 5;
+
+    // Explicitly indicate that no audio resource should be allocated
+    STANDARD_AUDIO_FORMAT_NO_AUDIO_RESOURCE = 100;
+  }
+
+  // Standard audio format
+  StandardAudioFormat standard_audio_format = 1;
+
+  // Sample rate in Hertz of the audio data
+  // This field is optional for `FLAC` and `WAV` audio files and required
+  // for all other audio formats.
+  OptionalInt32 sample_rate_hertz = 2;
+}

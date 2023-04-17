@@ -1,0 +1,92 @@
+// Protocol Buffer File
+// This is the gRPC definition for optional value messages, and is loosely
+// based on the google/protobuf/wrappers.proto wrapper definitions.
+//
+// These values are for use when a field is optional in LumenVox messages,
+// which is internally used to distinguish between a field being specified
+// with some default value or if the field is not being passed in the message.
+
+syntax = "proto3";
+
+package lumenvox.api;
+
+option csharp_namespace = "LumenVox.Api.OptionalValues";
+option go_package = "lumenvox/api";
+option java_multiple_files = false;
+option java_outer_classname = "OptionalValuesProto";
+option java_package = "lumenvox.api";
+option objc_class_prefix = "CLVOP";
+option php_namespace = "LumenVox\\Api\\OptionalValues";
+
+
+// Wrapper message for optional `double`.
+//
+// The JSON representation for `OptionalDouble` is JSON number.
+message OptionalDouble {
+  // The double value.
+  double value = 1;
+}
+
+// Wrapper message for optional `float`.
+//
+// The JSON representation for `OptionalFloat` is JSON number.
+message OptionalFloat {
+  // The float value.
+  float value = 1;
+}
+
+// Wrapper message for optional `int64`.
+//
+// The JSON representation for `OptionalInt64` is JSON string.
+message OptionalInt64 {
+  // The int64 value.
+  int64 value = 1;
+}
+
+// Wrapper message for optional `uint64`.
+//
+// The JSON representation for `OptionalUInt64` is JSON string.
+message OptionalUInt64 {
+  // The uint64 value.
+  uint64 value = 1;
+}
+
+// Wrapper message for optional `int32`.
+//
+// The JSON representation for `OptionalInt32` is JSON number.
+message OptionalInt32 {
+  // The int32 value.
+  int32 value = 1;
+}
+
+// Wrapper message for optional `uint32`.
+//
+// The JSON representation for `OptionalUInt32` is JSON number.
+message OptionalUInt32 {
+  // The uint32 value.
+  uint32 value = 1;
+}
+
+// Wrapper message for optional `bool`.
+//
+// The JSON representation for `OptionalBool` is JSON `true` and `false`.
+message OptionalBool {
+  // The bool value.
+  bool value = 1;
+}
+
+// Wrapper message for optional `string`.
+//
+// The JSON representation for `OptionalString` is JSON string.
+message OptionalString {
+  // The string value.
+  string value = 1;
+}
+
+// Wrapper message for optional `bytes`.
+//
+// The JSON representation for `OptionalBytes` is JSON string.
+message OptionalBytes {
+  // The bytes value.
+  bytes value = 1;
+}
