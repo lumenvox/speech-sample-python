@@ -1083,6 +1083,35 @@ class LumenVoxApiClient:
             correlation_id=correlation_id
         )
 
+    async def interaction_create_grammar_parse(self, session_stream, language: str, grammars: list, input_text: str,
+                                               grammar_settings: settings_msg.GrammarSettings = None,
+                                               general_interaction_settings: settings_msg.GeneralInteractionSettings = None,
+                                               parse_timeout_ms: int = None, correlation_id: str = None):
+        """
+        Handle InteractionCreateGrammarParse (interaction.proto)
+
+        grammars: A list of common_msg.Grammar protobuf messages
+        """
+
+        interaction_create_grammar_parse_request = interaction_msg.InteractionCreateGrammarParseRequest(
+            language=language,
+            grammars=grammars,
+            grammar_settings=grammar_settings,
+            input_text=input_text,
+            parse_timeout_ms=self.optional_int32(parse_timeout_ms) if parse_timeout_ms else None,
+            general_interaction_settings=general_interaction_settings,
+        )
+
+        interaction_request_msg = interaction_msg.InteractionRequestMessage(
+            interaction_create_grammar_parse=interaction_create_grammar_parse_request
+        )
+
+        await self.session_stream_write(
+            session_stream=session_stream,
+            interaction_request_msg=interaction_request_msg,
+            correlation_id=correlation_id
+        )
+
     async def interaction_begin_processing(self, session_stream, interaction_id: str, correlation_id: str = None):
         """
         Handle InteractionBeginProcessing (interaction.proto)

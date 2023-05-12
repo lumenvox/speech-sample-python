@@ -1,4 +1,4 @@
-# LumenVox Speech Sample Code
+# LumenVox API Sample Code
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
@@ -283,6 +283,14 @@ details that can be returned from the synthesis result.
 
 You can optionally request the synthesized audio be saved to disk
 so that you can listen to it if desired.
+
+## Grammar Parse Example
+
+See the `grammar_parse_example.py` script for an example of how to
+perform a grammar parse interaction using the Speech API.
+
+Grammar parse interactions will also accept builtin grammars or 
+URL-referenced grammars if one is not locally available. 
 
 ## Streaming CPA and AMD Decodes
 

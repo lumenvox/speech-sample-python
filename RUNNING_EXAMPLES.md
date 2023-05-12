@@ -746,3 +746,45 @@ final_result {
 
 session_close: Writing session request to stream.
 ```
+
+## grammar_parse_example.py results
+
+The results for the `grammar_parse_example.py` sample are shown below. The results
+display the input text "ONE TWO THREE FOUR" being successfully parsed from the 
+`test_data/Grammar/en-US/en_digits.grxml` grammar:
+
+```shell
+session_create: Writing session request to stream.
+session_id from session_create: 4a4bc601-da59-4a39-86cd-2ffb2dfd4ace
+interaction_id extracted from interaction_create_grammar_parse response is: 146d0181-caea-4948-8e34-6a0a971d34c3
+>> task_read_session_streams: final_result
+ correlation_id {
+  value: "5572f049-9dc0-4854-a7eb-1c452240e519"
+}
+final_result {
+  interaction_id: "146d0181-caea-4948-8e34-6a0a971d34c3"
+  final_result {
+    grammar_parse_interaction_result {
+      input_text: "ONE TWO THREE FOUR"
+      semantic_interpretations {
+        interpretation {
+          fields {
+            key: "interpretation"
+            value {
+              string_value: "\"1 2 3 4 \""
+            }
+          }
+        }
+        interpretation_json: "\"1 2 3 4 \""
+        grammar_label: "file:///usr/bin/Buffer_Grammar"
+        confidence: 1000
+        tag_format: "semantics/1.0.2006"
+      }
+      input_mode: "voice"
+      language: "EN-US"
+    }
+  }
+}
+
+session_close: Writing session request to stream.
+```
