@@ -150,6 +150,9 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
     # Use voice activity detection, an eos of 3200 will allow longer pauses between words
     vad_settings = lumenvox_api.define_vad_settings(use_vad=True, eos_delay_ms=3200)
 
+    # Recognition settings can be used to enable partial results
+    recognition_settings = lumenvox_api.define_recognition_settings(enable_partial_results=False)
+
     # audio will be streamed, any audio streamed after the interaction is created, will be processed
     audio_consume_settings = lumenvox_api.define_audio_consume_settings(
         audio_consume_mode=settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_STREAMING,
@@ -157,10 +160,12 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
         settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
 
     # create a transcription interaction with supplied settings
-    await lumenvox_api.interaction_create_transcription(session_stream=session_stream, language=language_code,
+    await lumenvox_api.interaction_create_transcription(session_stream=session_stream,
+                                                        language=language_code,
                                                         audio_consume_settings=audio_consume_settings,
                                                         vad_settings=vad_settings,
                                                         phrases=phrases,
+                                                        recognition_settings=recognition_settings,
                                                         phrase_list_settings=phrase_list_settings)
 
     # wait for response containing interaction ID to be returned
@@ -187,7 +192,7 @@ if __name__ == '__main__':
     lumenvox_api.initialize_lumenvox_api()
 
     # the function asr_transcription_session creates session, and runs an interaction
-    # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so the the event loop
+    # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so that the event loop
     # to handle gRPC async messages is created
 
     lumenvox_api.run_user_coroutine(

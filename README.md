@@ -274,6 +274,11 @@ called offline transcription mode may be slightly more efficient
 and faster than realtime streaming, but requires all the audio
 be sent at once, so may or may not be suitable for your use case.
 
+Partial results can be enabled using the `enable_partial_results`
+field in RecognitionSettings. They are turned off by default, but
+by setting `enable_partial_results.value` to `True`, partial
+results can be received.
+
 ## Text To Speech Example
 
 The `tts_example.py` script demonstrated a simple TTS synthesis.
