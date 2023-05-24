@@ -149,6 +149,9 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
     # Use voice activity detection, an eos of 3200 will allow longer pauses between words
     vad_settings = lumenvox_api.define_vad_settings(use_vad=True, eos_delay_ms=3200)
 
+    # Recognition settings can be used to enable partial results
+    recognition_settings = lumenvox_api.define_recognition_settings(enable_partial_results=False)
+
     # audio will be streamed, any audio streamed after the interaction is created, will be processed
     audio_consume_settings = lumenvox_api.define_audio_consume_settings(
         audio_consume_mode=settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_STREAMING,
@@ -163,6 +166,7 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
                                                         audio_consume_settings=audio_consume_settings,
                                                         vad_settings=vad_settings,
                                                         phrases=phrases,
+                                                        recognition_settings=recognition_settings,
                                                         phrase_list_settings=phrase_list_settings)
 
     # wait for response containing interaction ID to be returned

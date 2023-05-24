@@ -9,8 +9,7 @@ import lumenvox.api.settings_pb2 as settings_msg
 # audio_formats.proto messages
 import lumenvox.api.audio_formats_pb2 as audio_formats
 
-from lumenvox_helper_function import LumenVoxApiClient,  save_tts_test_audio_flag
-
+from lumenvox_helper_function import LumenVoxApiClient, save_tts_test_audio_flag
 
 
 async def create_api_session(lumenvox_api,
@@ -41,12 +40,11 @@ async def create_api_session(lumenvox_api,
     return session_stream, session_id
 
 
-
 async def tts_interaction(lumenvox_api,
-                                  text: str = None, voice: str = None, language_code: str = None,
-                                  audio_format: int = None, sample_rate_hertz: int = None,
-                                  tts_output_file_name: str = None,
-                                  deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                          text: str = None, voice: str = None, language_code: str = None,
+                          audio_format: int = None, sample_rate_hertz: int = None,
+                          tts_output_file_name: str = None,
+                          deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
 
                           ):
     """
@@ -76,21 +74,18 @@ async def tts_interaction(lumenvox_api,
                                                           operator_id=operator_id,
                                                           correlation_id=correlation_id)
 
-
-
     if not language_code:
         language_code = 'en-us'
 
-    #specify tts voice to use
+    # specify tts voice to use
     inline_synth_settings = lumenvox_api.define_tts_inline_synthesis_settings(voice=voice)
 
-    #create tts interaction, specify settings, tts text, and audio format for tts
+    # create tts interaction, specify settings, tts text, and audio format for tts
     await lumenvox_api.interaction_create_tts(session_stream=session_stream, language=language_code,
-                                                inline_text=text,
-                                                audio_format=audio_format, sample_rate_hertz=sample_rate_hertz,
-                                                tts_inline_synthesis_settings=inline_synth_settings,
-                                                )
-
+                                              inline_text=text,
+                                              audio_format=audio_format, sample_rate_hertz=sample_rate_hertz,
+                                              tts_inline_synthesis_settings=inline_synth_settings,
+                                              )
 
     # wait for response containing interaction ID to be returned
     r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
@@ -100,18 +95,16 @@ async def tts_interaction(lumenvox_api,
     # retrieve results, final results in this case signal tts audio is ready to pull
     await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
 
-    #this helper function sends the API message AudioPullRequest, then waits for all the AudioPullResponse
+    # this helper function sends the API message AudioPullRequest, then waits for all the AudioPullResponse
     # messages, which contain the TTS audio
     audio_bytes = await lumenvox_api.audio_pull_all(session_stream=session_stream, audio_id=interaction_id)
 
-    #if specified, save output to file
+    # if specified, save output to file
     if tts_output_file_name:
         with open(tts_output_file_name, "wb") as binary_file:
             binary_file.write(audio_bytes)
 
-
     await lumenvox_api.handle_interaction_close_all(session_stream=session_stream, interaction_id=interaction_id)
-
 
 
 if __name__ == '__main__':

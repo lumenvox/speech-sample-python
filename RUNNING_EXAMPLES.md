@@ -669,6 +669,48 @@ session_close: Writing session request to stream.
 audio streaming thread shutting down
 ```
 
+If partial results are enabled (see how the recognition settings are handled in `asr_transcription_interaction`), 
+additional output like the following should be present:
+```shell
+>> task_read_session_streams: partial_result
+ correlation_id {
+  value: "63f09ec7-0085-439a-ae1a-8d319ffb7eb7"
+}
+partial_result {
+  interaction_id: "8c5239cf-d25f-4978-ad9d-4915a2116b30"
+  partial_result {
+    transcription_interaction_result {
+      n_bests {
+        asr_result_meta_data {
+          words {
+            start_time_ms: 540
+            duration_ms: 459
+            word: "recorded"
+            confidence: 940
+          }
+          words {
+            start_time_ms: 1019
+            duration_ms: 280
+            word: "books"
+            confidence: 887
+          }
+          words {
+            start_time_ms: 1399
+            duration_ms: 299
+            word: "presen"
+            confidence: 806
+          }
+          transcript: "recorded books presen"
+          start_time_ms: 540
+          duration_ms: 1000
+          confidence: 887
+        }
+      }
+    }
+  }
+}
+```
+
 ## amd_example.py & cpa_example.py
 
 ```python

@@ -265,6 +265,7 @@ class LumenVoxApiClient:
                             self.queue_map[stream].vad_event_queue.put_nowait(r.vad_event)
                         elif response_type == 'partial_result':
                             # put partial result message into queue and set event
+                            print('>> task_read_session_streams: partial_result\n', r)
                             self.queue_map[stream].partial_result_queue.put_nowait(r.partial_result)
                             self.event_map[stream].partial_result_event.set()
                         elif response_type == 'final_result':
