@@ -94,7 +94,7 @@ server is configured to support this, however the use of TLS is recommended.
 
 Also, TLS connections are often on different ports than non-TLS, so if you
 are switching between the two, you should be aware of this and assign your
-`LUMENVOX_SPEECH_API_SERVICE` port value accordingly.
+`LUMENVOX_API_SERVICE` port value accordingly.
 
 When using connections to a Kubernetes ingress, you often need to specify
 the domain name connection rather than IP address, so that the ingress
@@ -119,7 +119,7 @@ functions instead if you prefer.
 > Before running any tests, please be sure to specify the
 > address of your target LumenVox server by updating the
 > following settings in `lumenvox_helper_function.py`:
-> 
+>
 > * `LUMENVOX_API_SERVICE` address of your server
 > * `deploymentid` your assigned deployment ID in the server
 > * `operatorid` that you wish to use (identifies API user)
