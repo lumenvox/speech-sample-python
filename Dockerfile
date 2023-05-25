@@ -5,7 +5,7 @@ ARG APP_USER=appuser
 # Configure user, install run dependencies and update CA certificates
 RUN adduser --disabled-password --gecos "" ${APP_USER} && \
     set -ex && \
-    RUN_DEPS="libpcre3 mime-support" && \
+    RUN_DEPS="libpcre3 mime-support nano vim" && \
     seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{} && \
     apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS && \
     update-ca-certificates && \
