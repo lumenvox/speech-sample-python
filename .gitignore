@@ -10,3 +10,7 @@ __pycache__/
 # Possible certificates
 *.crt
 *.pem
+
+# generated files
+/lumenvox
+/google

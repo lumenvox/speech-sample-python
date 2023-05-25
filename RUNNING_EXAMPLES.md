@@ -70,14 +70,14 @@ There are 4 examples for ASR, and a simple TTS example, as you can see below:
 
 Sample code provided for testing ASR capabilities:
 
-| ASR script                                 | grammar         | audio(ulaw 8khz)                   | results                                       |
-|--------------------------------------------|-----------------|------------------------------------|-----------------------------------------------|
+| ASR script                                 | grammar          | audio(ulaw 8khz)                   | results                                       |
+|--------------------------------------------|------------------|------------------------------------|-----------------------------------------------|
 | asr\_batch\_example.py                     | en\_digits.grxml | 1234-1s-front-1s-end.ulaw          | transcript and confidence score for each word |
 | asr\_streaming\_example.py                 | en\_digits.grxml | 1234.alaw                          | transcript and confidence score for each word |
-| asr\_transcription\_example.py             |                 | the\_great\_gatsby\_1\_minute.ulaw | transcript and confidence score for each word |
-| asr\_transcription\_phraselist\_example.py |  | english\_wordlist.wav              | transcript and confidence score for each word |
-| cpa\_example.py                            |                 | human\_residence.ulaw              | result: BEEP                                  |
-| amd\_example.py                            |                 | audio-TBD-AM.ulaw                  | result: HUMAN RESIDENCE                       |
+| asr\_transcription\_example.py             |                  | the\_great\_gatsby\_1\_minute.ulaw | transcript and confidence score for each word |
+| asr\_transcription\_phraselist\_example.py |                  | english\_wordlist.wav              | transcript and confidence score for each word |
+| cpa\_example.py                            |                  | human\_residence.ulaw              | result: BEEP                                  |
+| amd\_example.py                            |                  | audio-TBD-AM.ulaw                  | result: HUMAN RESIDENCE                       |
 
 
 Sample code provided for testing TTS capabilities:

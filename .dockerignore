@@ -1,0 +1,16 @@
+
+# IntelliJ project files
+.idea
+*.iml
+out
+gen
+
+# unwanted files
+/venv
+/lumenvox
+/google
+.git
+.gitignore
+.dockerignore
+Dockerfile
+*.crt
