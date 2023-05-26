@@ -34,10 +34,10 @@ extra_parameters_broken = True
 extra_parameters_reason = "Sending extra parameters is not supported by gRPC."
 
 # Define your target machine here
-LUMENVOX_API_SERVICE = 'localhost'
+LUMENVOX_API_SERVICE = 'lumenvox-api.testmachine.com'
 
 # Use this to enable TLS connectivity to your service
-ENABLE_TLS = False
+ENABLE_TLS = True
 
 # Location of TLS certificate to use
 CERT_FILE = './certs/server.crt'
