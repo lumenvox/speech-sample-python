@@ -35,10 +35,16 @@ extra_parameters_reason = "Sending extra parameters is not supported by gRPC."
 
 # Define your target machine here
 LUMENVOX_API_SERVICE = 'lumenvox-api.testmachine.com'
+
 # Use this to enable TLS connectivity to your service
 ENABLE_TLS = True
+
+# Location of TLS certificate to use
+CERT_FILE = './certs/server.crt'
+
 # This is used to specify the maximum message length handled by GRPC (do not change unless you understand the impact)
 MAX_GRPC_MESSAGE_MB = 4
+
 # This should be changed to match the deployment_id assigned to your system
 deploymentid = 'd80b9d9b-086f-42f0-a728-d95f39dc2229'
 operatorid = 'a69c7ee5-ac2d-40c2-9524-8fb0f5e5e7fd'
@@ -206,7 +212,7 @@ class LumenVoxApiClient:
     def initialize_lumenvox_api(self):
         # Initialize the channel and stub (using defined service endpoint)
         if ENABLE_TLS:
-            with open('./server.crt', 'rb') as f:
+            with open(CERT_FILE, 'rb') as f:
                 credentials = grpc.ssl_channel_credentials(root_certificates=f.read())
             self.channel = grpc.secure_channel(LUMENVOX_API_SERVICE, credentials=credentials)
         else:
@@ -1334,7 +1340,7 @@ class LumenVoxApiClient:
 
         # Initialize and return the channel (using defined service endpoint)
         if use_tls:
-            with open('./server.crt', 'rb') as f:
+            with open(CERT_FILE, 'rb') as f:
                 credentials = grpc.ssl_channel_credentials(root_certificates=f.read())
             self.channel = grpc.secure_channel(LUMENVOX_API_SERVICE, credentials=credentials)
 
