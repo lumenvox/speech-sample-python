@@ -112,15 +112,17 @@ if __name__ == '__main__':
     lumenvox_api = LumenVoxApiClient()
     lumenvox_api.initialize_lumenvox_api()
 
-    ssml_text = lumenvox_api.get_ssml_file_by_ref('../test_data/ssml/mark_element.ssml')
+    text_to_synthesize = "Hello World"
+
+    # Optionally use SSML from a file if needed...
+    # text_to_synthesize = lumenvox_api.get_ssml_file_by_ref('../test_data/ssml/mark_element.ssml')
 
     lumenvox_api.run_user_coroutine(
         tts_interaction(lumenvox_api,
                         language_code='en-us', voice='Chris',
                         audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW,
                         sample_rate_hertz=8000,
-                        # ssml_text=ssml_text,  # optionally use this instead of the text parameter
-                        text="Hello World",
+                        text=text_to_synthesize,
                         tts_output_file_name="tts_test.ulaw"
                         ), )
 
