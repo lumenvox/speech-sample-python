@@ -34,10 +34,10 @@ extra_parameters_broken = True
 extra_parameters_reason = "Sending extra parameters is not supported by gRPC."
 
 # Define your target machine here
-LUMENVOX_API_SERVICE = 'lumenvox-api.testmachine.com'
+LUMENVOX_API_SERVICE = 'localhost'
 
 # Use this to enable TLS connectivity to your service
-ENABLE_TLS = True
+ENABLE_TLS = False
 
 # Location of TLS certificate to use
 CERT_FILE = './certs/server.crt'
@@ -1414,6 +1414,27 @@ class LumenVoxApiClient:
         if 'iso-8859-1' in data[:70].lower():
             with open(grammar_file_path, 'r', encoding='iso-8859-1') as file:
                 data = file.read()
+        return data
+
+    @staticmethod
+    def get_ssml_file_by_ref(ssml_file_path) -> str:
+        """
+        Opens the referenced SSML file and returns the contents as a string
+
+        :param ssml_file_path: file path reference to SSML
+        :return: string containing SSML
+        """
+
+        cwd = os.getcwd()
+
+        if not os.path.isfile(ssml_file_path):
+            # trim the first character (potentially from ../)
+            ssml_file_path = ssml_file_path[1:]
+            if not os.path.isfile(ssml_file_path):
+                return ""
+
+        with open(ssml_file_path, 'r', encoding='utf-8') as file:
+            data = file.read()
         return data
 
     def define_transcription_phrase_list(self, phrases: list = None,
