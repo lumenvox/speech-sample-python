@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  speech-sample-python:
+    image: lumenvox/speech-sample-python
+    container_name: speech-sample-python
+    network_mode: host
+    restart: "no"
+
+    extra_hosts:
+      - "lumenvox-api.testmachine.com:127.0.0.1"
+
+    volumes:
+      # Map local grammars folder to the /grammars folder inside container
+      - "./Grammar:/code/test_data/Grammar"
+      # Map local certs folder to the /certs folder inside container
+      - "./certs:/code/certs"
+      # Map local audio folder to the /audio folder inside container
+      - "./Audio:/code/test_data/Audio"
+
+    command: "tail -f /dev/null"
