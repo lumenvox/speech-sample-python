@@ -31,3 +31,26 @@ docker run -ti --rm lumenvox/speech-sample-python bash
 
 Please review the various README.md and related files to understand
 how to configure your tests and connectivity.
+
+## Docker-compose
+
+You can also use the attached docker-compose.yml file
+to run the image, by typing:
+
+```shell
+docker-compose up -d
+```
+
+Then you can attach to the running container to
+run tests with:
+
+```shell
+docker exec -ti speech-sample-python bash
+```
+
+To stop the running container when you are finished,
+use:
+
+```shell
+docker-compose down
+```
