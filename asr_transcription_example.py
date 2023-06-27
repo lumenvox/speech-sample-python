@@ -147,8 +147,8 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
     if not language_code:
         language_code = 'en-us'
 
-    # Use voice activity detection, an eos of 3200 will allow longer pauses between words
-    vad_settings = lumenvox_api.define_vad_settings(use_vad=True, eos_delay_ms=3200)
+    # Use voice activity detection, an eos of 3210 will allow longer pauses between words
+    vad_settings = lumenvox_api.define_vad_settings(use_vad=True, eos_delay_ms=3210)
 
     # Recognition settings can be used to enable partial results
     recognition_settings = lumenvox_api.define_recognition_settings(enable_partial_results=False)

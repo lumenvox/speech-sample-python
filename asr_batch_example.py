@@ -8,34 +8,6 @@ import lumenvox.api.audio_formats_pb2 as audio_formats
 from lumenvox_helper_function import LumenVoxApiClient
 
 
-async def create_api_session(lumenvox_api,
-                             audio_format: int = None, sample_rate_hertz: int = None,
-                             deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
-                             ):
-    """
-    Creates LumenVox API session.  Sets up sesssion audio parameters.
-
-    @param lumenvox_api: Helper class for LumenVox client api
-    @param audio_format: Audio format for the session to use
-    @param sample_rate_hertz: audio sample rate
-    @param deployment_id: unique UUID of the deployment to use for the session
-      (default deployment id will be used if not specified)
-    @param operator_id: optional unique UUID can be used to track who is making API calls
-    @param correlation_id: optional UUID can be used to track individual API calls
-    @return: None
-    """
-
-    # generate new session stream and session
-    session_stream, session_id = await lumenvox_api.session_init(deployment_id=deployment_id,
-                                                                 operator_id=operator_id,
-                                                                 correlation_id=correlation_id)
-
-    await lumenvox_api.session_set_inbound_audio_format(session_stream=session_stream,
-                                                        audio_format=audio_format, sample_rate_hertz=sample_rate_hertz)
-
-    return session_stream, session_id
-
-
 async def asr_batch_interaction(lumenvox_api,
                                 audio_file: str = None, audio_format: int = None, sample_rate_hertz: int = None,
                                 language_code: str = None, grammar_file_ref: str = None,
@@ -59,17 +31,20 @@ async def asr_batch_interaction(lumenvox_api,
       (default deployment id will be used if not specified)
     """
 
-    # create session and set up audio codec and sample rate
-    session_stream, session_id = await create_api_session(lumenvox_api,
-                                                          audio_format=audio_format,
-                                                          sample_rate_hertz=sample_rate_hertz,
-                                                          deployment_id=deployment_id,
-                                                          operator_id=operator_id,
-                                                          correlation_id=correlation_id)
+    # # create session and set up audio codec and sample rate
+    # the function session_init is an helper function to create the grpc channel and the session
+    session_stream, session_id = await lumenvox_api.session_init(deployment_id=deployment_id,
+                                                                         operator_id=operator_id,
+                                                                         correlation_id=correlation_id)
 
-    # with batch mode, all audio is sent before creating an interaction
+    # Setting the sample rate and audio format for the audio we want to recognize
+    await lumenvox_api.session_set_inbound_audio_format(session_stream=session_stream,
+                                                                audio_format=audio_format, sample_rate_hertz=sample_rate_hertz)
+
+    # with batch mode, all audio is sent before creating an interaction. The binary audio data is here added to the session audio resource.
+    # session_audio_push is a helper function that takes audio_data as bytes and sends the data within a protobuf message over gRPC
     await lumenvox_api.session_audio_push(session_stream=session_stream,
-                                          audio_data=lumenvox_api.get_audio_file(filename=audio_file))
+                                                  audio_data=lumenvox_api.get_audio_file(filename=audio_file))
 
     # set audio usage as batch mode, and have processing for the interaction start at the beginning of all audio sent
     audio_consume_settings = lumenvox_api.define_audio_consume_settings(
@@ -81,11 +56,14 @@ async def asr_batch_interaction(lumenvox_api,
     # use voice activity detection
     vad_settings = lumenvox_api.define_vad_settings(use_vad=True)
 
+    # Set a default language in case a language is not detected
     if not language_code:
         language_code = 'en-us'
 
+    # Settings related to recognition results
     recognition_settings = lumenvox_api.define_recognition_settings()
 
+    # Settings related to SRGS grammar usage
     grammar_settings = lumenvox_api.define_grammar_settings()
 
     # define at least one grammar and append them to a list to parse into InteractionCreateGrammarParse
@@ -108,20 +86,23 @@ async def asr_batch_interaction(lumenvox_api,
         grammar = lumenvox_api.define_grammar(grammar_url=grammar_url)
         grammars.append(grammar)
 
-    # InteractionCreateAsr request
+    # ask the asr to decode the audio file performing an InteractionCreateAsrRequest request
     await lumenvox_api.interaction_create_asr(session_stream=session_stream, grammars=grammars, language=language_code,
-                                              audio_consume_settings=audio_consume_settings, vad_settings=vad_settings,
-                                              recognition_settings=recognition_settings,
-                                              grammar_settings=grammar_settings)
+                                                      audio_consume_settings=audio_consume_settings, vad_settings=vad_settings,
+                                                      recognition_settings=recognition_settings,
+                                                      grammar_settings=grammar_settings)
 
-    # wait for response containing interaction ID to be returned
+    # wait for response containing interaction ID to be returned.
+    # the helper function get_session_general_response attempts to receive a general response from the respective queue
     r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
     interaction_id = r.interaction_create_asr.interaction_id
     print("interaction_id extracted from interaction_create_asr response is:", interaction_id)
 
-    # attempt to retrieve a result at this point
+    # attempt to retrieve a result at this point.
+    # the helper function "get_session_final_result" retrieves the final result response of the given session stream if available
     await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
 
+    #
     await lumenvox_api.handle_interaction_close_all(session_stream=session_stream, interaction_id=interaction_id)
 
 

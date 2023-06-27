@@ -588,9 +588,11 @@ class LumenVoxApiClient:
         @param correlation_id: optional UUID can be used to track individual API calls
 
         """
+        # if a deployment_id is not passed, the default deployment_id is used
         if not deployment_id:
             deployment_id = deploymentid
 
+        # if a operator_id is not passed, a new random uuid is created
         if not operator_id:
             operator_id = operatorid
 
@@ -760,7 +762,7 @@ class LumenVoxApiClient:
         return audio_consume_settings
 
     def define_vad_settings(self, use_vad: bool = True,
-                            barge_in_timeout_ms: int = 3000, end_of_speech_timeout_ms: int = 20000,
+                            barge_in_timeout_ms: int = -1, end_of_speech_timeout_ms: int = -1,
                             noise_reduction_mode: int = settings_msg.VadSettings.NoiseReductionMode.NOISE_REDUCTION_MODE_DEFAULT,
                             bargein_threshold: int = 50, eos_delay_ms: int = 800, snr_sensitivity: int = 50,
                             stream_init_delay: int = 100, volume_sensitivity: int = 50,
