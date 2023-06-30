@@ -52,6 +52,9 @@ message SessionRequestMessage {
 
     // Load session-specific phrase list
     SessionLoadPhraseList session_load_phrase_list = 8;
+
+    // Explicit request to cancel all session related interactions and processing in progress
+    SessionCancelRequest session_cancel = 9;
   }
 }
 
@@ -147,6 +150,9 @@ message SessionResponse {
 
     // Response to explicit request to close interaction
     InteractionCloseResponse interaction_close = 101;
+
+    // Response for explicit session cancel request
+    SessionCancelResponse session_cancel = 102;
   }
 }
 
@@ -183,6 +189,15 @@ message SessionCloseRequest {
 }
 
 message SessionCloseResponse {
+  // Status of request
+  google.rpc.Status close_status = 1;
+}
+
+message SessionCancelRequest {
+  // Currently no fields defined
+}
+
+message SessionCancelResponse {
   // Status of request
   google.rpc.Status close_status = 1;
 }

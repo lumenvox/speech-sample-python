@@ -199,6 +199,9 @@ message GlobalGetSettingsRequest {
 
     // LoggingSettings type
     GET_SETTINGS_TYPE_LOGGING_SETTINGS = 10;
+
+    // PhraseList type
+    GET_SETTINGS_TYPE_PHRASE_LIST = 11;
   }
 
   // Used to specify the type of settings to request

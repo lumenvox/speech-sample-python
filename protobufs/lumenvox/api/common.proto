@@ -223,6 +223,8 @@ enum InteractionSubType{
   INTERACTION_SUB_TYPE_ENHANCED_TRANSCRIPTION = 3;
   // ASR continuous transcription 
   INTERACTION_SUB_TYPE_CONTINUOUS_TRANSCRIPTION = 4;
+  // Transcription result with normalized text
+  INTERACTION_SUB_TYPE_TRANSCRIPTION_WITH_NORMALIZATION = 5;
 }
 
 //

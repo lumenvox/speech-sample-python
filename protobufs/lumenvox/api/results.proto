@@ -36,7 +36,7 @@ message Word {
 
 // Raw transcript of words decoded by ASR
 //
-message AsrResultMetaData  {
+message AsrResultMetaData {
   // All words in Phrase so far.
   repeated Word words = 1;
 
@@ -96,10 +96,9 @@ message TranscriptionResult {
   NormalizedResult normalized_result = 2;
 
   // If enhanced transcription with grammars is used results are added here.
-  repeated AsrGrammarResult grammar_results= 3;
+  repeated AsrGrammarResult grammar_results = 3;
 }
 
-//
 // Result returned from an AMD interaction.
 //
 message AmdInteractionResult {
@@ -120,20 +119,16 @@ message AsrInteractionResult {
 
   // Language defined when creating the interaction.
   string language = 3;
-
 }
 
-//
 // Result returned from a CPA interaction.
 //
 message CpaInteractionResult {
 
   // CPA result in the form of an ASR-type message.
   AsrGrammarResult cpa_result = 1;
-
 }
 
-//
 // Result returned from a transcription interaction.
 //
 message TranscriptionInteractionResult {
@@ -144,7 +139,6 @@ message TranscriptionInteractionResult {
   string language = 2;
 }
 
-//
 // Result returned from grammar parse interaction.
 //
 message GrammarParseInteractionResult {
@@ -209,7 +203,6 @@ message NormalizationSegment {
   string final = 6;
 }
 
-//
 // Result returned from an Normalize Text. Used in either Transcription
 // interaction or a Text Normalization interaction.
 //
@@ -232,7 +225,6 @@ message NormalizedResult {
   string final_redacted = 5;
 }
 
-//
 // Result returned from an Normalize Text interaction.
 //
 message NormalizeTextResult {
@@ -317,7 +309,6 @@ message Result {
   }
 }
 
-//
 // Callback sent when a partial interaction result is available.
 //
 message PartialResult {
@@ -328,7 +319,6 @@ message PartialResult {
   Result partial_result = 2;
 }
 
-//
 // Callback sent when a final interaction result is ready.
 //
 message FinalResult {
@@ -342,11 +332,16 @@ message FinalResult {
   FinalResultStatus final_result_status = 3;
 
   // Status code produced. Returns 0 on success.
+  // this is comming form the 'internal' result message
+  // and should be passed to the caller
+  // shall we include the error here ???
+  // or better send it as a SessionEvent ??
   google.rpc.Status status = 4;
 }
 
 // List of Interaction FinalResult Statuses
-enum FinalResultStatus{
+//
+enum FinalResultStatus {
 
   // No final status specified
   FINAL_RESULT_STATUS_UNSPECIFIED = 0;
@@ -369,7 +364,7 @@ enum FinalResultStatus{
 
   // A transcription result was returned, 
   // which contains one or more embedded grammar matches
-  FINAL_RESULT_STATUS_TRANSCRIPTION_GRAMMAR_MATCHES =13;
+  FINAL_RESULT_STATUS_TRANSCRIPTION_GRAMMAR_MATCHES = 13;
   
   // A complete grammar match was returned
   FINAL_RESULT_STATUS_GRAMMAR_MATCH = 21;
@@ -381,14 +376,14 @@ enum FinalResultStatus{
   FINAL_RESULT_STATUS_GRAMMAR_PARTIAL_MATCH = 23;
 
   // An AMD interaction found one or more tones within the audio
-  FINAL_RESULT_STATUS_AMD_TONE=31;
+  FINAL_RESULT_STATUS_AMD_TONE = 31;
 
   // An AMD interaction found no tones within the audio 
-  FINAL_RESULT_STATUS_AMD_NO_TONES=32;
+  FINAL_RESULT_STATUS_AMD_NO_TONES = 32;
 
   // A CPA interaction result was returned
-  FINAL_RESULT_STATUS_CPA_RESULT=41;
+  FINAL_RESULT_STATUS_CPA_RESULT = 41;
 
   // No voice audio was detected for a CPA interaction
-  FINAL_RESULT_STATUS_CPA_SILENCE=42;
+  FINAL_RESULT_STATUS_CPA_SILENCE = 42;
 }

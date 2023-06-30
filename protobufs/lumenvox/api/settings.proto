@@ -211,7 +211,7 @@ message VadSettings {
   // This is different from the eos_delay_ms; This value represents the total
   // amount of time a caller is permitted to speak after barge-in is detected.
   // Range: a positive number of milliseconds or -1 (infinite)
-  // Default: -1 (infinite)
+  // Default: 800 milliseconds
   OptionalInt32 end_of_speech_timeout_ms = 4;
 
   enum NoiseReductionMode {

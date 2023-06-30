@@ -11,6 +11,7 @@ import "lumenvox/api/common.proto";
 import "lumenvox/api/results.proto";
 import "lumenvox/api/settings.proto";
 import "lumenvox/api/audio_formats.proto";
+import "lumenvox/api/interaction.proto";
 
 option csharp_namespace = "LumenVox.Api.Reporting";
 option go_package = "lumenvox/api";
@@ -417,6 +418,8 @@ message InteractionResultSet{
   FinalResultStatus final_result_status = 11;
   // Interaction Events
   repeated LogEvent log_events = 12;
+  // Optional phrase lists for transcription interaction
+  repeated TranscriptionPhraseList phrases = 13;
 }
 
 //
