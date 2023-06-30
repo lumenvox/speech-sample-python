@@ -460,6 +460,8 @@ message AnalysisSet {
   string settings_json = 11;
   // Analysis set description as a json string
   string analysis_json = 12;
+  // Analysis set properties
+  AnalysisSetProperties properties = 13;
 
   // Describes the possible statuses for an analysis set
   enum AnalysisSetStatus{
@@ -476,6 +478,15 @@ message AnalysisSet {
     // Deletion in progress
     ANALYSIS_SET_STATUS_ERASING = 5;
   }
+}
+
+//
+// Stores the analysis set properties
+//
+message AnalysisSetProperties {
+  
+  // Flag to combine Human Business and Human Residence for CPA results
+  bool combine_business_and_residence = 1;
 }
 
 //
@@ -497,6 +508,8 @@ message AnalysisSetFilterOptions {
   string language_string = 7;
   // Specific grammars filter
   string grammar_hash = 8;
+  // Analysis set properties
+  AnalysisSetProperties properties = 9;
 }
 
 // Data types for binary storage

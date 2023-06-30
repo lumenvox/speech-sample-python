@@ -211,7 +211,7 @@ message VadSettings {
   // This is different from the eos_delay_ms; This value represents the total
   // amount of time a caller is permitted to speak after barge-in is detected.
   // Range: a positive number of milliseconds or -1 (infinite)
-  // Default: 800 milliseconds
+  // Default: -1 (infinite)
   OptionalInt32 end_of_speech_timeout_ms = 4;
 
   enum NoiseReductionMode {
@@ -313,7 +313,7 @@ message PhraseListSettings {
   // Probability score boost raises or lowers the probability the words or
   // phrases are recognized. A negative value lowers the probability the
   // word is returned in results.
-  // Range: -5 to 15
+  // Range: -10.0 to 5.0 (very probable)
   // Default: 0 
   OptionalInt32 probability_boost = 2;
 }

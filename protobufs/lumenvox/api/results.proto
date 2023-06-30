@@ -71,6 +71,9 @@ message SemanticInterpretation {
 
   // Tag Format of in grammar used to generate this Semantic Interpretation.
   string tag_format = 5;
+
+  // Raw input text for the interpretation
+  string input_text = 6;
 }
 
 // Structure to hold data provided from ASR as final results
@@ -365,7 +368,10 @@ enum FinalResultStatus {
   // A transcription result was returned, 
   // which contains one or more embedded grammar matches
   FINAL_RESULT_STATUS_TRANSCRIPTION_GRAMMAR_MATCHES = 13;
-  
+
+  // A enhanced transcription result was returned, but no SISR
+  FINAL_RESULT_STATUS_TRANSCRIPTION_PARTIAL_MATCH = 14;
+
   // A complete grammar match was returned
   FINAL_RESULT_STATUS_GRAMMAR_MATCH = 21;
 
@@ -386,4 +392,10 @@ enum FinalResultStatus {
 
   // No voice audio was detected for a CPA interaction
   FINAL_RESULT_STATUS_CPA_SILENCE = 42;
+
+  // TTS audio is available to pull
+  FINAL_RESULT_STATUS_TTS_READY = 51;
+
+  // An inverse text normalization result was returned for a NormalizeText interaction.
+  FINAL_RESULT_STATUS_TEXT_NORMALIZE_RESULT = 61;
 }
