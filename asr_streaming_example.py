@@ -93,7 +93,7 @@ async def create_api_session(lumenvox_api,
 async def asr_streaming_session(lumenvox_api,
                                 audio_ref: str,
                                 language_code: str = None,
-                                grammar_file_ref: str = None, grammar_url: str = None,
+                                grammar_messages: list = None,
                                 chunk_size: int = 4000,
                                 audio_format: int = None, sample_rate_hertz: int = None,
                                 deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
@@ -122,7 +122,7 @@ async def asr_streaming_session(lumenvox_api,
                                                           deployment_id, operator_id, correlation_id)
 
     # run one transcription interaction
-    await asr_streaming_interaction(lumenvox_api, session_stream, language_code, grammar_file_ref, grammar_url)
+    await asr_streaming_interaction(lumenvox_api, session_stream, language_code, grammar_messages)
 
     # Signal the audio streaming thread to shut down, if still running
     global audio_thread_stop
@@ -134,7 +134,7 @@ async def asr_streaming_session(lumenvox_api,
 
 async def asr_streaming_interaction(lumenvox_api, session_stream,
                                     language_code: str = None,
-                                    grammar_file_ref: str = None, grammar_url: str = None
+                                    grammar_messages: list = None,
                                     ):
     """
     Function to run test transcription interaction
@@ -160,28 +160,10 @@ async def asr_streaming_interaction(lumenvox_api, session_stream,
         stream_start_location=
         settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
 
-    # define at least one grammar and append them to a list to parse into InteractionCreateGrammarParse
-    grammars = []
-    if isinstance(grammar_file_ref, str):
-        if grammar_file_ref:
-            grammar = lumenvox_api.define_grammar(
-                inline_grammar_text=lumenvox_api.get_grammar_file_by_ref(grammar_file_ref))
-            grammars.append(grammar)
-    elif isinstance(grammar_file_ref, list):
-        n = len(grammar_file_ref)
-        for i in range(n):
-            g = lumenvox_api.define_grammar(
-                inline_grammar_text=lumenvox_api.get_grammar_file_by_ref(grammar_file_ref[i]))
-            grammars.append(g)
-    elif grammar_url:
-        grammar = lumenvox_api.define_grammar(grammar_url=grammar_url)
-        grammars.append(grammar)
-
     # create an asr interaction with supplied settings
-    await lumenvox_api.interaction_create_asr(session_stream=session_stream, grammars=grammars, language=language_code,
-                                              audio_consume_settings=audio_consume_settings,
-                                              vad_settings=vad_settings
-                                              )
+    await lumenvox_api.interaction_create_asr(session_stream=session_stream, grammars=grammar_messages,
+                                              language=language_code, audio_consume_settings=audio_consume_settings,
+                                              vad_settings=vad_settings)
 
     # wait for response containing interaction ID to be returned
     r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
@@ -206,6 +188,12 @@ if __name__ == '__main__':
     lumenvox_api = LumenVoxApiClient()
     lumenvox_api.initialize_lumenvox_api()
 
+    # Here we specify a list of grammars to use for ASR interactions.
+
+    grammar_msgs = [
+        LumenVoxApiClient.inline_grammar_by_file_ref(grammar_reference='../test_data/Grammar/en-US/en_digits.grxml')
+    ]
+
     # the function asr_streaming_session creates session, and runs an interaction
     # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so that the event loop
     # to handle gRPC async messages is created
@@ -213,7 +201,7 @@ if __name__ == '__main__':
     lumenvox_api.run_user_coroutine(
         asr_streaming_session(lumenvox_api,
                               language_code='en',
-                              grammar_file_ref='../test_data/Grammar/en-US/en_digits.grxml',
+                              grammar_messages=grammar_msgs,
                               audio_ref='../test_data/Audio/en/1234.alaw',
                               audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ALAW,
                               chunk_size=4000,

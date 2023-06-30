@@ -1,4 +1,8 @@
+# Script to run a sequence of transcription interactions given the referenced audio files.
+# Ex: py asr_transcription_multiple.py [name of file to write to] [audio_file 1] [audio_file 2] ...
+
 import asyncio
+import sys
 import time
 from threading import Thread
 # settings.proto messages
@@ -34,7 +38,7 @@ def push_audio_thread(lumenvox_api, session_stream, audio_ref, chunk_size):
             # in order to do this from a different thread, and in a thread-safe way
             # run_coroutine_threadsafe is being used
             coroutine = lumenvox_api.audio_push_from_buffer(session_stream=session_stream,
-                                                             audio_buffer=audio_buffer)
+                                                            audio_buffer=audio_buffer)
             future = asyncio.run_coroutine_threadsafe(coroutine, lumenvox_api.loop)
             more_bytes = future.result(90)
             chunk_counter += 1
@@ -96,6 +100,7 @@ async def asr_transcription_session(lumenvox_api,
                                     chunk_size: int = 4000, embedded_grammars: list = None,
                                     audio_format: int = None, sample_rate_hertz: int = None,
                                     deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                                    csv_file=None
                                     ):
     """
     Function to open session, and run test transcription interaction
@@ -109,6 +114,7 @@ async def asr_transcription_session(lumenvox_api,
       (default deployment id will be used if not specified)
     @param operator_id: optional unique UUID can be used to track who is making API calls
     @param correlation_id: optional UUID can be used to track individual API calls
+    @param csv_file: Reference to CSV file to write to.
     @return: None
     """
 
@@ -118,8 +124,27 @@ async def asr_transcription_session(lumenvox_api,
                                                           deployment_id, operator_id, correlation_id)
 
     # run one transcription interaction
-    await asr_transcription_interaction(lumenvox_api, session_stream, language_code, phrases, phrase_list_settings,
-                                        embedded_grammars=embedded_grammars)
+    result, interaction_id = \
+        await asr_transcription_interaction(lumenvox_api, session_stream, language_code, phrases, phrase_list_settings,
+                                            embedded_grammars=embedded_grammars)
+
+    # write contents of interaciton if CSV file is provided
+    if csv_file:
+        fields = [
+            audio_ref,
+            session_id,
+            interaction_id,
+            str(result.final_result_status) if result else 'No result',
+            result.final_result.transcription_interaction_result.n_bests[0].asr_result_meta_data.transcript
+            if result else 'No result'
+        ]
+
+        fields_str = ''
+        for f in fields:
+            fields_str += (f + ',') if (fields[-1] != f) else f
+
+        fields_str += '\n'
+        csv_file.write(fields_str)
 
     # Signal the audio streaming thread to shut down, if still running
     global audio_thread_stop
@@ -187,26 +212,41 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
 
     await lumenvox_api.close_interaction_and_validate(session_stream=session_stream, interaction_id=interaction_id)
 
+    return result, interaction_id
+
 
 if __name__ == '__main__':
+    # Modified version of the transcription sample script to process multiple audio files and write results to CSV.
+    # sys.argv[1] - CSV file to write to
+    # sys.argv[2:] - Audio file references
+
+    if len(sys.argv) < 3:
+        print("Invalid number of arguments")
+        sys.exit()
+
+    audio_file_refs = sys.argv[2:]
+
     # Create and initialize the API helper object that will be used to simplify the example code
     lumenvox_api = LumenVoxApiClient()
     lumenvox_api.initialize_lumenvox_api()
 
-    # list of embedded grammars to populate if using enhanced transcription
-    embedded_grammars = []
+    results_csv = open(sys.argv[1], "a")
+    results_csv.write("audio_file_ref, session_id, interaction_id, final_result_status, transcript\n")
 
     # the function asr_transcription_session creates session, and runs an interaction
     # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so that the event loop
     # to handle gRPC async messages is created
 
-    lumenvox_api.run_user_coroutine(
-        asr_transcription_session(lumenvox_api, language_code='en',
-                                  audio_ref='../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw',
-                                  chunk_size=4000,
-                                  embedded_grammars=embedded_grammars
-                                  ), )
+    for a in audio_file_refs:
+        lumenvox_api.run_user_coroutine(
+            asr_transcription_session(lumenvox_api,
+                                      language_code='en',
+                                      audio_ref=a,
+                                      chunk_size=4000,
+                                      csv_file=results_csv),)
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.
     lumenvox_api.shutdown_lumenvox_api_client()
+
+    results_csv.close()

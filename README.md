@@ -279,6 +279,20 @@ field in RecognitionSettings. They are turned off by default, but
 by setting `enable_partial_results.value` to `True`, partial
 results can be received.
 
+### `asr_transcription_multiple.py `
+
+This script allows for running multiple streaming transcription interactions at once, given the audio files provided in
+the system arguments. The results of the interactions will be written to the specified CSV file.
+
+```shell
+py asr_transcription_multiple.py ['name of file to write to'] [audio_file 1] [audio_file 2] ...
+# ex: 
+# py asr_transcription_multiple.py transcription_results.csv \
+# ../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw \
+# ../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw \
+# ../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw
+```
+
 ## Text To Speech Example
 
 The `tts_example.py` script demonstrated a simple TTS synthesis.

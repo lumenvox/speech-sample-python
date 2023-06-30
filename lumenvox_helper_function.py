@@ -855,7 +855,8 @@ class LumenVoxApiClient:
 
         return tts_inline_synthesis_settings
 
-    def define_grammar(self, grammar_url: str = None, inline_grammar_text: str = None,
+    @staticmethod
+    def define_grammar(grammar_url: str = None, inline_grammar_text: str = None,
                        global_grammar_label: str = None, session_grammar_label: str = None,
                        builtin_voice_grammar: int = None,
                        builtin_dtmf_grammar: int = None,
@@ -893,11 +894,14 @@ class LumenVoxApiClient:
 
         return grammar_msg
 
-    def inline_grammar_by_file_ref(self, grammar_reference) -> common_msg.Grammar:
+    @staticmethod
+    def inline_grammar_by_file_ref(grammar_reference) -> common_msg.Grammar:
         """
         Load text contents of grammar file into grammar message (common.proto) and return grammar message
         """
-        return common_msg.Grammar(inline_grammar_text=self.get_grammar_file_by_ref(grammar_reference=grammar_reference))
+        return common_msg.Grammar(
+            inline_grammar_text=LumenVoxApiClient.get_grammar_file_by_ref(grammar_reference=grammar_reference)
+        )
 
     async def interaction_create_amd(self, session_stream, amd_settings: settings_msg.AmdSettings,
                                      audio_consume_settings: settings_msg.AudioConsumeSettings = None,
@@ -1061,7 +1065,9 @@ class LumenVoxApiClient:
                                                audio_consume_settings: settings_msg.AudioConsumeSettings = None,
                                                normalization_settings: settings_msg.NormalizationSettings = None,
                                                phrase_list_settings: settings_msg.PhraseListSettings = None,
-                                               general_interaction_settings: settings_msg.GeneralInteractionSettings = None,
+                                               general_interaction_settings:
+                                               settings_msg.GeneralInteractionSettings = None,
+                                               embedded_grammars: list = None,
                                                correlation_id: str = None):
         """
         Handle InteractionCreateTranscription (interaction.proto)
@@ -1079,7 +1085,8 @@ class LumenVoxApiClient:
             vad_settings=vad_settings,
             audio_consume_settings=audio_consume_settings,
             normalization_settings=normalization_settings,
-            general_interaction_settings=general_interaction_settings
+            general_interaction_settings=general_interaction_settings,
+            embedded_grammars=embedded_grammars
         )
 
         interaction_request_msg = interaction_msg.InteractionRequestMessage(
@@ -1391,7 +1398,8 @@ class LumenVoxApiClient:
             audio_data = audio_file.read()
         return audio_data
 
-    def get_grammar_file_by_ref(self, grammar_reference) -> str:
+    @staticmethod
+    def get_grammar_file_by_ref(grammar_reference) -> str:
         """
         Opens the referenced grammar file and returns the contents as a string
 
