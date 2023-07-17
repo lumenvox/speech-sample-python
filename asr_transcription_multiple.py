@@ -2,6 +2,7 @@
 # Ex: py asr_transcription_multiple.py [name of file to write to] [audio_file 1] [audio_file 2] ...
 
 import asyncio
+import os
 import sys
 import time
 from threading import Thread
@@ -218,32 +219,48 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
 if __name__ == '__main__':
     # Modified version of the transcription sample script to process multiple audio files and write results to CSV.
     # sys.argv[1] - CSV file to write to
-    # sys.argv[2:] - Audio file references
+    # sys.argv[2] - Directory to read from
+    # (optional) sys.argv[3:] - Extensions to limit to
 
     if len(sys.argv) < 3:
         print("Invalid number of arguments")
+        print("sys.argv[1] - CSV file to write to")
+        print("sys.argv[2] - Directory to read from")
+        print("(optional) sys.argv[3:] - Extensions to limit to")
+
         sys.exit()
 
-    audio_file_refs = sys.argv[2:]
+    directory: str = sys.argv[2]
+    extensions: list = None if len(sys.argv) < 4 else sys.argv[3:]
+
+    if not os.path.isdir(directory):
+        print("Directory", directory, "not found.")
+        sys.exit()
 
     # Create and initialize the API helper object that will be used to simplify the example code
     lumenvox_api = LumenVoxApiClient()
     lumenvox_api.initialize_lumenvox_api()
-
     results_csv = open(sys.argv[1], "a")
     results_csv.write("audio_file_ref, session_id, interaction_id, final_result_status, transcript\n")
 
-    # the function asr_transcription_session creates session, and runs an interaction
-    # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so that the event loop
-    # to handle gRPC async messages is created
+    # loop through files in directory
+    for f in os.listdir(directory):
+        filename = ''
+        if extensions:
+            for e in extensions:
+                if f.endswith(e):
+                    filename = os.path.join(directory, f)
+                    break
+        else:
+            filename = os.path.join(directory, f)
 
-    for a in audio_file_refs:
-        lumenvox_api.run_user_coroutine(
-            asr_transcription_session(lumenvox_api,
-                                      language_code='en',
-                                      audio_ref=a,
-                                      chunk_size=4000,
-                                      csv_file=results_csv),)
+        if filename:
+            lumenvox_api.run_user_coroutine(
+                asr_transcription_session(lumenvox_api,
+                                          language_code='en',
+                                          audio_ref=filename,
+                                          chunk_size=4000,
+                                          csv_file=results_csv), )
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.

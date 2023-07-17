@@ -49,8 +49,7 @@ async def create_api_session(lumenvox_api,
                              audio_ref: str,
                              audio_format: int = None, sample_rate_hertz: int = None,
                              chunk_size: int = 4000,
-                             deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
-                             ):
+                             deployment_id: str = None, operator_id: str = None, correlation_id: str = None):
     """
     Creates LumenVox API session.
     Also creates a separate thread to stream audio into the session
@@ -93,10 +92,10 @@ async def asr_transcription_session(lumenvox_api,
                                     language_code: str = None,
                                     phrases: list = None,
                                     phrase_list_settings: settings_msg.PhraseListSettings = None,
+                                    normalization_settings: settings_msg.NormalizationSettings = None,
                                     chunk_size: int = 4000, embedded_grammars: list = None,
                                     audio_format: int = None, sample_rate_hertz: int = None,
-                                    deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
-                                    ):
+                                    deployment_id: str = None, operator_id: str = None, correlation_id: str = None):
     """
     Function to open session, and run test transcription interaction
 
@@ -109,6 +108,7 @@ async def asr_transcription_session(lumenvox_api,
       (default deployment id will be used if not specified)
     @param operator_id: optional unique UUID can be used to track who is making API calls
     @param correlation_id: optional UUID can be used to track individual API calls
+    @param embedded_grammars: Additional grammars for enhanced transcription
     @return: None
     """
 
@@ -118,8 +118,11 @@ async def asr_transcription_session(lumenvox_api,
                                                           deployment_id, operator_id, correlation_id)
 
     # run one transcription interaction
-    await asr_transcription_interaction(lumenvox_api, session_stream, language_code, phrases, phrase_list_settings,
-                                        embedded_grammars=embedded_grammars)
+    await asr_transcription_interaction(lumenvox_api, session_stream, language_code,
+                                        phrases=phrases,
+                                        phrase_list_settings=phrase_list_settings,
+                                        embedded_grammars=embedded_grammars,
+                                        normalization_settings=normalization_settings)
 
     # Signal the audio streaming thread to shut down, if still running
     global audio_thread_stop
@@ -133,6 +136,7 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
                                         language_code: str = None,
                                         phrases: list = None,
                                         phrase_list_settings: settings_msg.PhraseListSettings = None,
+                                        normalization_settings: settings_msg.NormalizationSettings = None,
                                         embedded_grammars: list = None):
     """
     Function to run test transcription interaction
@@ -141,6 +145,7 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
     @param session_stream: Handle to the session stream
     @param language_code: Two or four character code to specify language used
     @param phrases: Optional words and phrase list to use when transcribing
+    @param normalization_settings: Settings required for text normalization
     @return: None
     """
 
@@ -168,7 +173,8 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
                                                         phrases=phrases,
                                                         recognition_settings=recognition_settings,
                                                         phrase_list_settings=phrase_list_settings,
-                                                        embedded_grammars=embedded_grammars)
+                                                        embedded_grammars=embedded_grammars,
+                                                        normalization_settings=normalization_settings)
 
     # wait for response containing interaction ID to be returned
     r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
@@ -180,7 +186,7 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
     audio_thread_stream_audio = True
 
     # wait for final result message to be returned
-    result = await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
+    await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
 
     # Signal the audio streaming thread to stop streaming audio
     audio_thread_stream_audio = False
@@ -201,11 +207,12 @@ if __name__ == '__main__':
     # to handle gRPC async messages is created
 
     lumenvox_api.run_user_coroutine(
-        asr_transcription_session(lumenvox_api, language_code='en',
+        asr_transcription_session(lumenvox_api,
+                                  language_code='en',
                                   audio_ref='../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw',
                                   chunk_size=4000,
-                                  embedded_grammars=embedded_grammars
-                                  ), )
+                                  embedded_grammars=embedded_grammars)
+    )
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.

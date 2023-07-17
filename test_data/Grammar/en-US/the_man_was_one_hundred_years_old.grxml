@@ -1,0 +1,6 @@
+#ABNF 1.0;
+language en-US;
+mode voice;
+root $TheMan;
+
+public $TheMan = (the man was one hundred years old);

@@ -19,11 +19,11 @@ def push_audio_thread(lumenvox_api, session_stream, audio_ref, chunk_size):
       and audio_thread_stop to stop thread
       In production code, this would not be recommended
 
-    @param lumenvox_api: String reference to audio file
-    @param session_stream: Session stream to use if session is already available
-    @param audio_ref: Audio file name
-    @param chunk_size: Number of bytes to split audio data into
-    @return: None
+    :param lumenvox_api: String reference to audio file
+    :param session_stream: Session stream to use if session is already available
+    :param audio_ref: Audio file name
+    :param chunk_size: Number of bytes to split audio data into
+    :return: None
     """
     audio_buffer = lumenvox_api.load_audio_buffer(filename=audio_ref, chunk_bytes=chunk_size)
 
@@ -58,15 +58,15 @@ async def create_api_session(lumenvox_api,
     Also creates a separate thread to stream audio into the session
     The audio thread will begin streaming audio when the global variable audio_thread_stream_audio is set to True
 
-    @param lumenvox_api: Helper class for LumenVox client api
-    @param audio_ref: String reference to audio file
-    @param chunk_size: Number of bytes to split audio data into
-    @param audio_format: Audio format for the session to use
-    @param deployment_id: unique UUID of the deployment to use for the session
+    :param lumenvox_api: Helper class for LumenVox client api
+    :param audio_ref: String reference to audio file
+    :param chunk_size: Number of bytes to split audio data into
+    :param audio_format: Audio format for the session to use
+    :param deployment_id: unique UUID of the deployment to use for the session
       (default deployment id will be used if not specified)
-    @param operator_id: optional unique UUID can be used to track who is making API calls
-    @param correlation_id: optional UUID can be used to track individual API calls
-    @return: None
+    :param operator_id: optional unique UUID can be used to track who is making API calls
+    :param correlation_id: optional UUID can be used to track individual API calls
+    :return: None
     """
 
     # generate new session stream and session
@@ -98,16 +98,16 @@ async def amd_session(lumenvox_api,
     """
     Function to open session, and run test AMD interaction
 
-    @param lumenvox_api: Helper class for LumenVox client api
-    @param audio_ref: String reference to audio file
-    @param chunk_size: Number of bytes to split audio data into
-    @param audio_format: Audio format for the session to use
-    @param sample_rate_hertz: Sample rate for session's audio
-    @param deployment_id: unique UUID of the deployment to use for the session
+    :param lumenvox_api: Helper class for LumenVox client api
+    :param audio_ref: String reference to audio file
+    :param chunk_size: Number of bytes to split audio data into
+    :param audio_format: Audio format for the session to use
+    :param sample_rate_hertz: Sample rate for session's audio
+    :param deployment_id: unique UUID of the deployment to use for the session
       (default deployment id will be used if not specified)
-    @param operator_id: optional unique UUID can be used to track who is making API calls
-    @param correlation_id: optional UUID can be used to track individual API calls
-    @return: None
+    :param operator_id: optional unique UUID can be used to track who is making API calls
+    :param correlation_id: optional UUID can be used to track individual API calls
+    :return: None
     """
 
     # create session and set up audio streaming thread
@@ -130,9 +130,9 @@ async def amd_streaming_interaction(lumenvox_api, session_stream):
     """
     Function to run test AMD interaction
 
-    @param lumenvox_api: Helper class for LumenVox client api
-    @param session_stream: Handle to the session stream
-    @return: None
+    :param lumenvox_api: Helper class for LumenVox client api
+    :param session_stream: Handle to the session stream
+    :return: None
     """
 
     # AMD uses voice activity detection, barge_in_timeout_ms specified how long to wait for a tone

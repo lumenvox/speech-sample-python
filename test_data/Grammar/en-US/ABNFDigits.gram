@@ -1,0 +1,23 @@
+#ABNF 1.0 UTF-8;
+
+language en-US-DI;
+
+mode voice;
+
+tag-format <lumenvox/1.0>;
+
+
+root $Digits;
+
+$Digit = (ONE {$="1";}        |
+          TWO {$="2";}        |
+          THREE {$="3";}      |
+          FOUR {$="4";}       |
+          FIVE {$="5";}       |
+          SIX {$="6";}        |
+          SEVEN {$="7";}      |
+          EIGHT {$="8";}      |
+          NINE {$="9";}       |
+          (ZERO | O) {$="0";} );
+
+$Digits = {$=''} ($Digit {$+=$$})<1->;

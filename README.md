@@ -249,7 +249,7 @@ decodes are processed without waiting for VAD activity to
 trigger it. This may be faster in certain situations, however it
 also behaves differently due to the way this is implemented.
 
-## Streaming ASR Decode
+## Streaming ASR Decode Example
 
 See the `asr_streaming_example.py` script for an example of how to
 perform a streaming-mode ASR decode using the Speech API.
@@ -258,7 +258,7 @@ A streaming-mode decode uses Voice Activity Detection (VAD),
 and streams chunks of audio into the system, relying on
 VAD to determine start and end of speech to trigger processing.
 
-## Streaming Transcription
+## Streaming Transcription Example
 
 See the `asr_transcription_example.py` script for an example of
 how to perform a streaming transcription using the Speech API.
@@ -285,13 +285,44 @@ This script allows for running multiple streaming transcription interactions at 
 the system arguments. The results of the interactions will be written to the specified CSV file.
 
 ```shell
-py asr_transcription_multiple.py ['name of file to write to'] [audio_file 1] [audio_file 2] ...
+py asr_transcription_multiple.py ['name of file to write to'] [directory containing audio files] [optional: extensions to limit to]
 # ex: 
-# py asr_transcription_multiple.py transcription_results.csv \
-# ../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw \
-# ../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw \
-# ../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw
+# py asr_transcription_multiple.py transcription_results.csv C:\audio_files .ulaw
 ```
+
+### Dialects
+The `asr_transcription_dialect_example.py` uses the streaming transcription
+code to demonstrate the differences between results based on dialect (ex. 
+'en-us' vs. 'en-gb').
+
+## Enhanced Transcription Example
+
+See the `asr_enhanced_transcription.py` script for an example of
+how to perform an enhanced transcription using the Speech API. This is 
+based on the code used for the streaming transcription example.
+
+Enhanced transcription is performed by including addition grammars to
+the transcription interaction. Semantic interpretations will also be included
+within the results should the content of the audio match any of the specified
+grammars.
+
+## Normalized Transcription Example
+See the `asr_transcription_normalization.py` script for an example of
+how to perform an enhanced transcription using the Speech API. This is 
+based on the code used for the streaming transcription example.
+
+Normalized transcription is performed by including normalization settings
+upon interaction creation. This will include additional, normalization-specific
+output, on top of the transcript received basic transcription.
+
+## Transcription Using Alias
+See the `asr_aliaslexicon_transcription_example.py` script for an example of
+how to perform a transcription interaction with aliases. This is 
+based on the code used for the batch ASR example, as this requires a grammar.
+
+The grammar for aliases must include a URI reference to a lexicon XML, the
+contents of which will be visible in the results should transcription include
+words as aliases under a lexeme in the lexicon file.
 
 ## Text To Speech Example
 
@@ -350,3 +381,12 @@ new audio files which can be found in the `test_data/VB` directory.
 Note that in order for this test to work, you will need to define the correct
 endpoints for both the Biometric API and the Management API. Like the Speech
 API, you will need to update your hosts file or DNS to make this work.
+
+## Normalize Text Example
+
+See the `normalize_text_example.py` script for an example of how to
+perform a "normalize text" interaction using the Speech API.
+
+Normalize text interactions require a text transcript and normalization
+settings to run. 
+

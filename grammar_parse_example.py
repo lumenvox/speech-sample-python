@@ -5,17 +5,16 @@ from lumenvox_helper_function import LumenVoxApiClient
 
 
 async def create_api_session(lumenvox_api,
-                             deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
-                             ):
+                             deployment_id: str = None, operator_id: str = None, correlation_id: str = None):
     """
     Creates LumenVox API session.
 
-    @param lumenvox_api: Helper class for LumenVox client api
-    @param deployment_id: unique UUID of the deployment to use for the session
+    :param lumenvox_api: Helper class for LumenVox client api
+    :param deployment_id: unique UUID of the deployment to use for the session
       (default deployment id will be used if not specified)
-    @param operator_id: optional unique UUID can be used to track who is making API calls
-    @param correlation_id: optional UUID can be used to track individual API calls
-    @return: Stream and ID of the session
+    :param operator_id: optional unique UUID can be used to track who is making API calls
+    :param correlation_id: optional UUID can be used to track individual API calls
+    :return: Stream and ID of the session
     """
 
     # generate new session stream and session
@@ -32,16 +31,17 @@ async def grammar_parse_interaction(lumenvox_api,
                                     deployment_id: str = None, operator_id: str = None, correlation_id: str = None):
     """
 
-    @param lumenvox_api: Helper class for LumenVox client api
-    @param language_code: two or four character code specifying the language of the interaction
-    @param grammar_file_ref: String reference to grammar file
-    @param builtin_voice_grammar: Enum for builtin grammar
-    @param grammar_url: URL of the grammar to use instead of inline
-    @param deployment_id: unique UUID of the deployment to use for the session
-    @param operator_id: optional unique UUID can be used to track who is making API calls
-    @param correlation_id: ptional UUID can be used to track individual API calls
+    :param lumenvox_api: Helper class for LumenVox client api
+    :param language_code: two or four character code specifying the language of the interaction
+    :param grammar_file_ref: String reference to grammar file
+    :param builtin_voice_grammar: Enum for builtin grammar
+    :param grammar_url: URL of the grammar to use instead of inline
+    :param deployment_id: unique UUID of the deployment to use for the session
+    :param operator_id: optional unique UUID can be used to track who is making API calls
+    :param correlation_id: ptional UUID can be used to track individual API calls
       (default deployment id will be used if not specified)
     """
+
     # create session and set up audio codec and sample rate
     session_stream, session_id = await create_api_session(lumenvox_api,
                                                           deployment_id=deployment_id,

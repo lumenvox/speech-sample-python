@@ -1,4 +1,9 @@
+# Script to run a sequence of transcription interactions given the referenced audio files.
+# Ex: py asr_transcription_multiple.py [name of file to write to] [audio_file 1] [audio_file 2] ...
+
 import asyncio
+import os
+import sys
 import time
 from threading import Thread
 # settings.proto messages
@@ -17,11 +22,11 @@ def push_audio_thread(lumenvox_api, session_stream, audio_ref, chunk_size):
       and audio_thread_stop to stop thread
       In production code, this would not be recommended
 
-    :param lumenvox_api: String reference to audio file
-    :param session_stream: Session stream to use if session is already available
-    :param audio_ref: Audio file name
-    :param chunk_size: Number of bytes to split audio data into
-    :return: None
+    @param lumenvox_api: String reference to audio file
+    @param session_stream: Session stream to use if session is already available
+    @param audio_ref: Audio file name
+    @param chunk_size: Number of bytes to split audio data into
+    @return: None
     """
     audio_buffer = lumenvox_api.load_audio_buffer(filename=audio_ref, chunk_bytes=chunk_size)
 
@@ -56,15 +61,16 @@ async def create_api_session(lumenvox_api,
     Also creates a separate thread to stream audio into the session
     The audio thread will begin streaming audio when the global variable audio_thread_stream_audio is set to True
 
-    :param lumenvox_api: Helper class for lumenvox client api
-    :param audio_ref: String reference to audio file
-    :param chunk_size: Number of bytes to split audio data into
-    :param audio_format: Audio format for the session to use
-    :param deployment_id: unique UUID of the deployment to use for the session
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param audio_ref: String reference to audio file
+    @param chunk_size: Number of bytes to split audio data into
+    @param audio_format: Audio format for the session to use
+    @param sample_rate_hertz: Sample rate for session's audio
+    @param deployment_id: unique UUID of the deployment to use for the session
       (default deployment id will be used if not specified)
-    :param operator_id: optional unique UUID can be used to track who is making API calls
-    :param correlation_id: optional UUID can be used to track individual API calls
-    :return: None
+    @param operator_id: optional unique UUID can be used to track who is making API calls
+    @param correlation_id: optional UUID can be used to track individual API calls
+    @return: None
     """
 
     # generate new session stream and session
@@ -92,23 +98,25 @@ async def asr_transcription_session(lumenvox_api,
                                     language_code: str = None,
                                     phrases: list = None,
                                     phrase_list_settings: settings_msg.PhraseListSettings = None,
-                                    chunk_size: int = 4000,
+                                    chunk_size: int = 4000, embedded_grammars: list = None,
                                     audio_format: int = None, sample_rate_hertz: int = None,
                                     deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
+                                    csv_file=None
                                     ):
     """
     Function to open session, and run test transcription interaction
 
-    :param lumenvox_api: Helper class for lumenvox client api
-    :param audio_ref: String reference to audio file
-    :param language_code: Two or four character code to specify language used
-    :param chunk_size: Number of bytes to split audio data into
-    :param audio_format: Audio format for the session to use
-    :param deployment_id: unique UUID of the deployment to use for the session
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param audio_ref: String reference to audio file
+    @param language_code: Two or four character code to specify language used
+    @param chunk_size: Number of bytes to split audio data into
+    @param audio_format: Audio format for the session to use
+    @param deployment_id: unique UUID of the deployment to use for the session
       (default deployment id will be used if not specified)
-    :param operator_id: optional unique UUID can be used to track who is making API calls
-    :param correlation_id: optional UUID can be used to track individual API calls
-    :return: None
+    @param operator_id: optional unique UUID can be used to track who is making API calls
+    @param correlation_id: optional UUID can be used to track individual API calls
+    @param csv_file: Reference to CSV file to write to.
+    @return: None
     """
 
     # create session and set up audio streaming thread
@@ -117,7 +125,49 @@ async def asr_transcription_session(lumenvox_api,
                                                           deployment_id, operator_id, correlation_id)
 
     # run one transcription interaction
-    await asr_transcription_interaction(lumenvox_api, session_stream, language_code, phrases, phrase_list_settings)
+    result, interaction_id = \
+        await asr_transcription_interaction(lumenvox_api, session_stream, language_code, phrases, phrase_list_settings,
+                                            embedded_grammars=embedded_grammars)
+
+    sem_interp_results = []
+    if result or \
+        len(result.final_result.transcription_interaction_result.n_bests[0].grammar_results[0].semantic_interpretations):
+        for s in \
+                result.final_result.transcription_interaction_result.n_bests[0].grammar_results[0].\
+                        semantic_interpretations:
+            input_text = s.input_text
+            grammar_label = s.grammar_label
+            interpretation_string_value = s.interpretation.fields['interpretation'].string_value
+            interpretation_json = s.interpretation_json
+            confidence = str(s.confidence)
+
+            full = \
+                "[input_text: " + input_text + \
+                "; grammar_label: " + grammar_label + \
+                "; interpretation_string_value: " + interpretation_string_value + \
+                "; interpretation_json: " + interpretation_json + \
+                "; confidence: " + confidence + "]"
+
+            sem_interp_results.append(full)
+
+    # write contents of interaciton if CSV file is provided
+    if csv_file:
+        fields = [
+            audio_ref,
+            session_id,
+            interaction_id,
+            str(result.final_result_status) if result else 'No result',
+            result.final_result.transcription_interaction_result.n_bests[0].asr_result_meta_data.transcript
+            if result else 'No result',
+            ';'.join(str(s) for s in sem_interp_results) if sem_interp_results else 'No grammar results'
+        ]
+
+        fields_str = ''
+        for f in fields:
+            fields_str += (f + ',') if (fields[-1] != f) else f
+
+        fields_str += '\n'
+        csv_file.write(fields_str)
 
     # Signal the audio streaming thread to shut down, if still running
     global audio_thread_stop
@@ -131,15 +181,15 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
                                         language_code: str = None,
                                         phrases: list = None,
                                         phrase_list_settings: settings_msg.PhraseListSettings = None,
-                                        ):
+                                        embedded_grammars: list = None):
     """
     Function to run test transcription interaction
 
-    :param lumenvox_api: Helper class for lumenvox client api
-    :param session_stream: Handle to the session stream
-    :param language_code: Two or four character code to specify language used
-    :param phrases: Optional words and phrase list to use when transcribing
-    :return: None
+    @param lumenvox_api: Helper class for LumenVox client api
+    @param session_stream: Handle to the session stream
+    @param language_code: Two or four character code to specify language used
+    @param phrases: Optional words and phrase list to use when transcribing
+    @return: None
     """
 
     # set default language code if none is provided
@@ -158,16 +208,15 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
         stream_start_location=
         settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
 
-    if phrases:
-        phrases = [lumenvox_api.define_transcription_phrase_list(phrases)]
-
     # create a transcription interaction with supplied settings
-    await lumenvox_api.interaction_create_transcription(session_stream=session_stream, language=language_code,
+    await lumenvox_api.interaction_create_transcription(session_stream=session_stream,
+                                                        language=language_code,
                                                         audio_consume_settings=audio_consume_settings,
                                                         vad_settings=vad_settings,
                                                         phrases=phrases,
                                                         recognition_settings=recognition_settings,
-                                                        phrase_list_settings=phrase_list_settings)
+                                                        phrase_list_settings=phrase_list_settings,
+                                                        embedded_grammars=embedded_grammars)
 
     # wait for response containing interaction ID to be returned
     r = await lumenvox_api.get_session_general_response(session_stream=session_stream, wait=3)
@@ -179,30 +228,71 @@ async def asr_transcription_interaction(lumenvox_api, session_stream,
     audio_thread_stream_audio = True
 
     # wait for final result message to be returned
-    result = await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=90)
+    result = await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
 
     # Signal the audio streaming thread to stop streaming audio
     audio_thread_stream_audio = False
 
     await lumenvox_api.close_interaction_and_validate(session_stream=session_stream, interaction_id=interaction_id)
 
+    return result, interaction_id
+
 
 if __name__ == '__main__':
+    # Modified version of the transcription sample script to process multiple audio files and write results to CSV.
+    # sys.argv[1] - CSV file to write to
+    # sys.argv[2] - Directory to read from
+    # (optional) sys.argv[3:] - Extensions to limit to
+
+    if len(sys.argv) < 3:
+        print("Invalid number of arguments")
+        print("sys.argv[1] - CSV file to write to")
+        print("sys.argv[2] - Directory to read from")
+        print("(optional) sys.argv[3:] - Extensions to limit to")
+
+        sys.exit()
+
+    directory: str = sys.argv[2]
+    extensions: list = None if len(sys.argv) < 4 else sys.argv[3:]
+
+    if not os.path.isdir(directory):
+        print("Directory", directory, "not found.")
+        sys.exit()
+
     # Create and initialize the API helper object that will be used to simplify the example code
     lumenvox_api = LumenVoxApiClient()
     lumenvox_api.initialize_lumenvox_api()
+    results_csv = open(sys.argv[1], "a")
+    results_csv.write("audio_file_ref, session_id, interaction_id, final_result_status, transcript, grammar_results\n")
 
-    # the function asr_transcription_session creates session, and runs an interaction
-    # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so that the event loop
-    # to handle gRPC async messages is created
+    # add your grammars here:
+    embedded_grammars = [
+        LumenVoxApiClient
+        .inline_grammar_by_file_ref(grammar_reference='../test_data/Grammar/en-US/ABNFDigits.gram'),
+    ]
 
-    lumenvox_api.run_user_coroutine(
-        asr_transcription_session(lumenvox_api, language_code='en',
-                                  audio_ref='../test_data/Audio/en/transcription/the_great_gatsby_1_minute.ulaw',
-                                  phrases=["Frank Muller", "F Scott Fitzgerald"],
-                                  chunk_size=4000,
-                                  ), )
+    # loop through files in directory
+    for f in os.listdir(directory):
+        filename = ''
+        if extensions:
+            for e in extensions:
+                if f.endswith(e):
+                    filename = os.path.join(directory, f)
+                    break
+        else:
+            filename = os.path.join(directory, f)
+
+        if filename:
+            lumenvox_api.run_user_coroutine(
+                asr_transcription_session(lumenvox_api,
+                                          language_code='en',
+                                          audio_ref=filename,
+                                          chunk_size=4000,
+                                          embedded_grammars=embedded_grammars,
+                                          csv_file=results_csv), )
 
     # Note that if the above code encounters a problem, the following may not be called, and the callback thread
     # running inside the helper may not be told to stop. You should ensure this happens in production code.
     lumenvox_api.shutdown_lumenvox_api_client()
+
+    results_csv.close()

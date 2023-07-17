@@ -17,17 +17,17 @@ async def asr_batch_interaction(lumenvox_api,
     """
     Common ASR (batch processing) coroutine
 
-    @param lumenvox_api: Helper class for LumenVox client api
-    @param audio_file: audio file to use for session audio
-    @param audio_format: audio format enum from StandardAudioFormat
-    @param sample_rate_hertz: audio sample rate
-    @param language_code: two or four character code specifying the language of the interaction
-    @param grammar_file_ref: String reference to grammar file
-    @param grammar_url: URL of the grammar to use instead of inline
-    @param builtin_voice_grammar: Enum for builtin grammar
-    @param deployment_id: unique UUID of the deployment to use for the session
-    @param operator_id: optional unique UUID can be used to track who is making API calls
-    @param correlation_id: optional UUID can be used to track individual API calls
+    :param lumenvox_api: Helper class for LumenVox client api
+    :param audio_file: audio file to use for session audio
+    :param audio_format: audio format enum from StandardAudioFormat
+    :param sample_rate_hertz: audio sample rate
+    :param language_code: two or four character code specifying the language of the interaction
+    :param grammar_file_ref: String reference to grammar file
+    :param grammar_url: URL of the grammar to use instead of inline
+    :param builtin_voice_grammar: Enum for builtin grammar
+    :param deployment_id: unique UUID of the deployment to use for the session
+    :param operator_id: optional unique UUID can be used to track who is making API calls
+    :param correlation_id: optional UUID can be used to track individual API calls
       (default deployment id will be used if not specified)
     """
 

@@ -412,7 +412,7 @@ class LumenVoxApiClient:
         This function sets up needed event loop and message queues to support that
         The user supplied coroutine is the "program" to run with Lumenvox API support
         
-        @param user_coroutine: The async-defined coroutine to run as the main task
+        :param user_coroutine: The async-defined coroutine to run as the main task
         """
         self.session_stream_set = set()
         self.global_stream_set = set()
@@ -581,11 +581,11 @@ class LumenVoxApiClient:
         """
         Given a stream, it creates a new session and returns the ID of the new session
 
-        @param session_stream: A previously created stream to and from which we write and read messages
-        @param session_id: unique UUID with which the create session will be referenced
-        @param deployment_id: unique UUID of the deployment to use for the session
-        @param operator_id: optional unique UUID can be used to track who is making API calls
-        @param correlation_id: optional UUID can be used to track individual API calls
+        :param session_stream: A previously created stream to and from which we write and read messages
+        :param session_id: unique UUID with which the create session will be referenced
+        :param deployment_id: unique UUID of the deployment to use for the session
+        :param operator_id: optional unique UUID can be used to track who is making API calls
+        :param correlation_id: optional UUID can be used to track individual API calls
 
         """
         # if a deployment_id is not passed, the default deployment_id is used
@@ -600,13 +600,17 @@ class LumenVoxApiClient:
         session_id = optional_values.OptionalString(value=session_id) if session_id else None
 
         # message setup
-        session_create_request = session_msg.SessionCreateRequest(deployment_id=deployment_id,
-                                                                  operator_id=operator_id, session_id=session_id)
+        session_create_request = \
+            session_msg.SessionCreateRequest(deployment_id=deployment_id,
+                                             operator_id=operator_id,
+                                             session_id=session_id)
+
         session_request_msg = session_msg.SessionRequestMessage(session_create=session_create_request)
 
         # write messages to stream
         print("session_create: Writing session request to stream.")
-        await self.session_stream_write(session_stream=session_stream, session_request_msg=session_request_msg,
+        await self.session_stream_write(session_stream=session_stream,
+                                        session_request_msg=session_request_msg,
                                         correlation_id=correlation_id)
 
         await asyncio.sleep(0.1)
@@ -622,7 +626,8 @@ class LumenVoxApiClient:
         session_request_msg = session_msg.SessionRequestMessage(session_close=session_close_request)
 
         print("session_close: Writing session request to stream.")
-        await self.session_stream_write(session_stream=session_stream, session_request_msg=session_request_msg,
+        await self.session_stream_write(session_stream=session_stream,
+                                        session_request_msg=session_request_msg,
                                         correlation_id=correlation_id)
 
     async def session_set_inbound_audio_format(self, session_stream, correlation_id: str = None,
@@ -640,16 +645,18 @@ class LumenVoxApiClient:
         if sample_rate_hertz is None:
             sample_rate_hertz = 8000
 
-        audio_format_msg = audio_formats.AudioFormat(standard_audio_format=audio_format,
-                                                     sample_rate_hertz=optional_values.OptionalInt32(
-                                                         value=sample_rate_hertz))
+        audio_format_msg = \
+            audio_formats.AudioFormat(standard_audio_format=audio_format,
+                                      sample_rate_hertz=optional_values.OptionalInt32(value=sample_rate_hertz))
 
         session_inbound_audio_format_request = \
             session_msg.SessionInboundAudioFormatRequest(audio_format=audio_format_msg)
+
         session_request_msg = \
             session_msg.SessionRequestMessage(session_audio_format=session_inbound_audio_format_request)
 
-        await self.session_stream_write(session_stream=session_stream, session_request_msg=session_request_msg,
+        await self.session_stream_write(session_stream=session_stream,
+                                        session_request_msg=session_request_msg,
                                         correlation_id=correlation_id)
 
         # session_response = await self.session_stream_read(session_stream=session_stream)
@@ -665,7 +672,8 @@ class LumenVoxApiClient:
         audio_push_request = common_msg.AudioPushRequest(audio_data=audio_data)
         audio_request_msg = common_msg.AudioRequestMessage(audio_push=audio_push_request)
 
-        await self.session_stream_write(session_stream=session_stream, correlation_id=correlation_id,
+        await self.session_stream_write(session_stream=session_stream,
+                                        correlation_id=correlation_id,
                                         audio_request_msg=audio_request_msg)
 
     async def session_audio_pull(self, session_stream, audio_id: str, correlation_id: str = None,
@@ -737,19 +745,20 @@ class LumenVoxApiClient:
                                       audio_consume_mode: int =
                                       settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_STREAMING,
                                       stream_start_location: int =
-                                      settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_STREAM_BEGIN,
+                                      settings_msg.AudioConsumeSettings.StreamStartLocation.
+                                      STREAM_START_LOCATION_STREAM_BEGIN,
                                       start_offset_ms: int = 0, audio_consume_max_ms: int = 0) \
             -> settings_msg.AudioConsumeSettings:
         """
         Construct an AudioConsumeSettings message (settings.proto)
         The defaults are set in the function definition
 
-        @param audio_channel: For multi-channel audio, this is the channel number being referenced (Default: 0)
-        @param audio_consume_mode: Which audio mode to use
-        @param stream_start_location: Specify where audio consume starts when "streaming" mode is used
-        @param start_offset_ms: Optional offset in milliseconds to adjust the audio start point. (Default: 0)
-        @param audio_consume_max_ms: Optional maximum audio to process. Value of 0 means process all audio sent
-        @return: AudioConsumeSettings protobuf message (settings.proto)
+        :param audio_channel: For multi-channel audio, this is the channel number being referenced (Default: 0)
+        :param audio_consume_mode: Which audio mode to use
+        :param stream_start_location: Specify where audio consume starts when "streaming" mode is used
+        :param start_offset_ms: Optional offset in milliseconds to adjust the audio start point. (Default: 0)
+        :param audio_consume_max_ms: Optional maximum audio to process. Value of 0 means process all audio sent
+        :return: AudioConsumeSettings protobuf message (settings.proto)
         """
         audio_consume_settings = settings_msg.AudioConsumeSettings(
             audio_channel=self.optional_int32(audio_channel),
@@ -762,8 +771,10 @@ class LumenVoxApiClient:
         return audio_consume_settings
 
     def define_vad_settings(self, use_vad: bool = True,
-                            barge_in_timeout_ms: int = -1, end_of_speech_timeout_ms: int = -1,
-                            noise_reduction_mode: int = settings_msg.VadSettings.NoiseReductionMode.NOISE_REDUCTION_MODE_DEFAULT,
+                            barge_in_timeout_ms: int = -1,
+                            end_of_speech_timeout_ms: int = -1,
+                            noise_reduction_mode: int =
+                            settings_msg.VadSettings.NoiseReductionMode.NOISE_REDUCTION_MODE_DEFAULT,
                             bargein_threshold: int = 50, eos_delay_ms: int = 800, snr_sensitivity: int = 50,
                             stream_init_delay: int = 100, volume_sensitivity: int = 50,
                             wind_back_ms: int = 480) -> settings_msg.VadSettings:
@@ -795,11 +806,11 @@ class LumenVoxApiClient:
         Construct an RecognitionSettings message (settings.proto)
         The defaults are set in the function definition
 
-        @param max_alternatives: Maximum number of recognition hypotheses to be returned. Default: 1
-        @param trim_silence_value: how aggressively the ASR trims leading silence from input audio
-        @param enable_partial_results: When true, partial results callbacks will be enabled for the interaction
-        @param confidence_threshold: onfidence threshold. Range 0 to 1000; applies to grammar based asr interactions
-        @return: RecognitionSettings protobuf message (settings.proto)
+        :param max_alternatives: Maximum number of recognition hypotheses to be returned. Default: 1
+        :param trim_silence_value: how aggressively the ASR trims leading silence from input audio
+        :param enable_partial_results: When true, partial results callbacks will be enabled for the interaction
+        :param confidence_threshold: onfidence threshold. Range 0 to 1000; applies to grammar based asr interactions
+        :return: RecognitionSettings protobuf message (settings.proto)
         """
         recognition_settings = settings_msg.RecognitionSettings(
             max_alternatives=self.optional_int32(max_alternatives),
@@ -810,6 +821,22 @@ class LumenVoxApiClient:
 
         return recognition_settings
 
+    def define_normalization_settings(self, enable_inverse_text: bool = False,
+                                      enable_punctuation_capitalization: bool = False,
+                                      enable_redaction: bool = False) -> settings_msg.NormalizationSettings:
+        """
+        Construct a NormalizationSettings message (settings.proto)
+        The defaults are set in the function definition
+        """
+
+        norm_settings = settings_msg.NormalizationSettings(
+            enable_inverse_text=self.optional_bool(enable_inverse_text),
+            enable_punctuation_capitalization=self.optional_bool(enable_punctuation_capitalization),
+            enable_redaction=self.optional_bool(enable_redaction)
+        )
+
+        return norm_settings
+
     def define_grammar_settings(self,
                                 default_tag_format: int = settings_msg.GrammarSettings.TagFormat.TAG_FORMAT_SEMANTICS_1_2006,
                                 ssl_verify_peer: bool = True,
@@ -818,10 +845,10 @@ class LumenVoxApiClient:
         Construct an GrammarSettings message (settings.proto)
         The defaults are set in the function definition
 
-        @param default_tag_format: The tag-format for loaded grammars. default: TagFormat.TAG_FORMAT_SEMANTICS_1_2006
-        @param ssl_verify_peer: If true, https grammar url must have a valid certificate.  default: True
-        @param load_grammar_timeout_ms: Timeout to wait for gramamr load.  default: 200000ms
-        @return: GrammarSettings protobuf message (settings.proto)
+        :param default_tag_format: The tag-format for loaded grammars. default: TagFormat.TAG_FORMAT_SEMANTICS_1_2006
+        :param ssl_verify_peer: If true, https grammar url must have a valid certificate.  default: True
+        :param load_grammar_timeout_ms: Timeout to wait for gramamr load.  default: 200000ms
+        :return: GrammarSettings protobuf message (settings.proto)
         """
 
         grammar_settings = settings_msg.GrammarSettings(
@@ -1099,9 +1126,38 @@ class LumenVoxApiClient:
             correlation_id=correlation_id
         )
 
+    async def interaction_create_normalize_text(self, session_stream, language: str, transcript: str,
+                                                normalization_settings: settings_msg.NormalizationSettings = None,
+                                                general_interaction_settings:
+                                                settings_msg.GeneralInteractionSettings = None,
+                                                correlation_id: str = None):
+        """
+        Handle InteractionCreateNormalizeText (interaction.proto)
+        """
+
+        interaction_create_normalize_text_request = \
+            interaction_msg.InteractionCreateNormalizeTextRequest(
+                language=language,
+                transcript=transcript,
+                normalization_settings=normalization_settings,
+                general_interaction_settings=general_interaction_settings
+            )
+
+        interaction_request_msg = \
+            interaction_msg.InteractionRequestMessage(
+                interaction_create_normalize_text=interaction_create_normalize_text_request
+            )
+
+        await self.session_stream_write(
+            session_stream=session_stream,
+            interaction_request_msg=interaction_request_msg,
+            correlation_id=correlation_id
+        )
+
     async def interaction_create_grammar_parse(self, session_stream, language: str, grammars: list, input_text: str,
                                                grammar_settings: settings_msg.GrammarSettings = None,
-                                               general_interaction_settings: settings_msg.GeneralInteractionSettings = None,
+                                               general_interaction_settings:
+                                               settings_msg.GeneralInteractionSettings = None,
                                                parse_timeout_ms: int = None, correlation_id: str = None):
         """
         Handle InteractionCreateGrammarParse (interaction.proto)
@@ -1218,23 +1274,26 @@ class LumenVoxApiClient:
                            correlation_id: str = None):
         """
         Helper function to create a session and provide both the session stream and ID
-        @param session_id: A UUID value to use as the session ID upon creation
-        @param deployment_id: unique UUID of the deployment to use for the session
-        @param operator_id: optional unique UUID can be used to track who is making API calls
-        @param correlation_id: optional UUID can be used to track individual API calls
-        @return: Returns both the session_stream and session ID
+        :param session_id: A UUID value to use as the session ID upon creation
+        :param deployment_id: unique UUID of the deployment to use for the session
+        :param operator_id: optional unique UUID can be used to track who is making API calls
+        :param correlation_id: optional UUID can be used to track individual API calls
+        :return: Returns both the session_stream and session ID
         """
         session_stream = await self.create_channel_and_init_stream()
         self.init_session_stream_maps(session_stream)
         await self.set_session_stream_for_reader_task(session_stream=session_stream)
 
         if session_id:
-            await self.session_create(session_stream=session_stream, session_id=session_id,
-                                      deployment_id=deployment_id, operator_id=operator_id,
+            await self.session_create(session_stream=session_stream,
+                                      session_id=session_id,
+                                      deployment_id=deployment_id,
+                                      operator_id=operator_id,
                                       correlation_id=correlation_id)
         else:
             await self.session_create(session_stream=session_stream,
-                                      deployment_id=deployment_id, operator_id=operator_id,
+                                      deployment_id=deployment_id,
+                                      operator_id=operator_id,
                                       correlation_id=correlation_id)
 
         session_id = await self.session_id_queue.get()
@@ -1246,8 +1305,8 @@ class LumenVoxApiClient:
     async def session_close_all(self, session_stream):
         """
         Helper function to handle closing session and stream. Check that SessionClose returns a proper status code (0).
-        @param session_stream:
-        @return: None
+        :param session_stream:
+        :return: None
         """
         await self.session_close(session_stream=session_stream)
         session_close_response = await self.get_session_general_response(session_stream=session_stream, wait=3)
@@ -1262,9 +1321,9 @@ class LumenVoxApiClient:
         """
         Given a session stream and interaction ID, close the interaction and confirm that the proper interaction was
         closed and that the status code is 0.
-        @param session_stream: Stream of the session containing the interaction
-        @param interaction_id: ID of the interaction to close
-        @return: None
+        :param session_stream: Stream of the session containing the interaction
+        :param interaction_id: ID of the interaction to close
+        :return: None
         """
         await self.interaction_close(session_stream=session_stream, interaction_id=interaction_id)
         r2 = await self.get_session_general_response(session_stream=session_stream, wait=3)
@@ -1275,11 +1334,11 @@ class LumenVoxApiClient:
         Call the function to close interaction (with the proper returned status code), and then close the session and
         associated stream.
 
-        @param global_stream: Possible global stream to close
-        @param session_stream: Stream of session to close
-        @param interaction_id: ID of interaction to close
-        @param close_session: Whether to close session.
-        @return:
+        :param global_stream: Possible global stream to close
+        :param session_stream: Stream of session to close
+        :param interaction_id: ID of interaction to close
+        :param close_session: Whether to close session.
+        :return:
         """
         await self.close_interaction_and_validate(session_stream=session_stream,
                                                   interaction_id=interaction_id)
