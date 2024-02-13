@@ -114,6 +114,18 @@ service ReportingAPIService {
   // Returns license usage snapshots for specified deployment in specified period
   //
   rpc UsageSnapshot(UsageSnapshotRequest) returns (UsageSnapshotResponse);
+
+  //
+  // Sends lumenvox cloud license server response to license service
+  //
+  rpc LicenseStatusReportResponsePush(LicenseStatusReportResponsePushRequest) 
+      returns (LicenseStatusReportResponsePushResponse);
+
+  //
+  // Retrieves license status report from license service
+  //
+  rpc LicenseStatusReportPull(LicenseStatusReportPullRequest) 
+      returns (LicenseStatusReportPullResponse);
 }
 
 // ======== messages below  ===============================================
@@ -130,7 +142,7 @@ message AnalysisSetListRequest {
   // Analysis set list order (optional), default created_date
   repeated AnalysisSetListOrder list_order = 3;
   // Additional filtering options (optional, e.g. by type or language...)
-  AnalysisSetFilterOptions filter = 4;
+  AnalysisSetListFilterOptions filter = 4;
 
   // Enum with available sorting fields
   enum AnalysisSetListOrder {
@@ -150,7 +162,29 @@ message AnalysisSetListRequest {
     ANALYSIS_SET_LIST_ORDER_STATUS = 6;
     // Order by interaction status descending
     ANALYSIS_SET_LIST_ORDER_STATUS_DESC = 7;
+    // Order by interaction name ascending
+    ANALYSIS_SET_LIST_ORDER_NAME = 8;
+    // Order by interaction name descending
+    ANALYSIS_SET_LIST_ORDER_NAME_DESC = 9;
+    // Order by interaction type ascending
+    ANALYSIS_SET_LIST_ORDER_TYPE = 10;
+    // Order by interaction type descending
+    ANALYSIS_SET_LIST_ORDER_TYPE_DESC = 11;
   }
+}
+
+//
+// Defines a filter for analysis set list
+//
+message AnalysisSetListFilterOptions {
+  // Start timestamp for the interval
+  google.protobuf.Timestamp created_date_from = 1;
+  // End timestamp for the interval
+  google.protobuf.Timestamp created_date_to = 2;
+  // Interaction type filter
+  InteractionType type = 3;
+  // Description (name) filter
+  string description = 4;
 }
 
 //
@@ -272,6 +306,8 @@ message InteractionAnalysisFilterOptions {
   string grammar_hash = 4;
   // Include selected ssml
   string ssml_hash = 5;
+  // Search text
+  string search_text = 6;
 }
 
 //
@@ -383,11 +419,16 @@ message InteractionDetails {
   InteractionResultSet original_result = 14;
   // Tuned interaction result
   InteractionResultSet tuned_result = 15;
+  //Analysis status text
+  string status_text =  16;
+  // Error text in html format
+  string html_error = 17;
   // Converted Interaction type: CPA, TTS
   InteractionType type = 20;
   // Interaction SubType
   InteractionSubType sub_type = 21;
-
+  //Notes
+  string notes = 22;
 }
 
 //
@@ -420,6 +461,10 @@ message InteractionResultSet{
   repeated LogEvent log_events = 12;
   // Optional phrase lists for transcription interaction
   repeated TranscriptionPhraseList phrases = 13;
+  //Final result status text
+  string final_result_status_text = 14;
+  //Session settings
+  SessionSettings session_settings = 15;
 }
 
 //
@@ -432,6 +477,10 @@ message InteractionAnalysisUpdateTranscription {
   string analysis_set_id = 2;
   // New transcription value
   string transcript_text = 3;
+  // New transcription semantic interpretation
+  string transcript_si = 4;
+  // Notes
+  string notes = 5;
 }
 
 //
@@ -673,4 +722,46 @@ message SnapshotData {
   // Usage report snapshot generated at created_date
   // Array of usage report information, one element per component
   repeated ComponentLicenseUsage component_license_usage = 4;
+}
+
+
+//
+// LicenseStatusReportResponsePushRequest contains information from lumenvox license
+// cloud services which are then sent to license service for validation
+//
+message LicenseStatusReportResponsePushRequest{
+  // unique license status id
+  string license_status_id = 1;
+  // license status response retrieved from lumenvox cloud license server
+  string license_status_report_response_json = 2;
+}
+
+//
+// LicenseStatusReportResponsePushResponse contains status determining if request was
+// successfully processed
+//
+message LicenseStatusReportResponsePushResponse{
+  // response status
+  google.rpc.Status status = 1;
+}
+
+//
+// LicenseStatusReportPullRequest sent to request license report status info
+//
+message LicenseStatusReportPullRequest{
+// no fields
+}
+
+//
+// LicenseStatusReportPullResponse contains information provided by license
+// service with corresponding id which will be matched later when receiving
+// response from lumenvox cloud licensing server
+//
+message LicenseStatusReportPullResponse{
+  // unique license status id
+  string license_status_id = 1;
+  // license status report received from license service
+  string license_status_report_json = 2;
+  // response status
+  google.rpc.Status status = 3;
 }

@@ -1,4 +1,7 @@
 # common.proto messages
+import os
+import sys
+
 import lumenvox.api.common_pb2 as common_msg
 # settings.proto messages
 import lumenvox.api.settings_pb2 as settings_msg
@@ -13,8 +16,7 @@ async def asr_batch_interaction(lumenvox_api,
                                 language_code: str = None, grammar_messages: list = None,
                                 builtin_voice_grammar: common_msg.Grammar = None,
                                 deployment_id: str = None, operator_id: str = None, correlation_id: str = None,
-                                audio_consume_settings: settings_msg.AudioConsumeSettings = None,
-                                vad_settings: settings_msg.VadSettings = None
+                                csv_file=None
                                 ):
     """
     Common ASR (batch processing) coroutine
@@ -31,6 +33,7 @@ async def asr_batch_interaction(lumenvox_api,
     :param operator_id: optional unique UUID can be used to track who is making API calls
     :param correlation_id: optional UUID can be used to track individual API calls
       (default deployment id will be used if not specified)
+    :param csv_file: Reference to CSV file to write to.
     """
 
     # create session and set up audio codec and sample rate
@@ -41,7 +44,8 @@ async def asr_batch_interaction(lumenvox_api,
 
     # Setting the sample rate and audio format for the audio we want to recognize
     await lumenvox_api.session_set_inbound_audio_format(session_stream=session_stream,
-                                                        audio_format=audio_format, sample_rate_hertz=sample_rate_hertz)
+                                                        audio_format=audio_format,
+                                                        sample_rate_hertz=sample_rate_hertz)
 
     # With batch mode, all audio is sent before creating an interaction.
     # The binary audio data is here added to the session audio resource.
@@ -50,18 +54,15 @@ async def asr_batch_interaction(lumenvox_api,
     await lumenvox_api.session_audio_push(session_stream=session_stream,
                                           audio_data=lumenvox_api.get_audio_file(filename=audio_file))
 
-    if not audio_consume_settings:
-        # set audio usage as batch mode, and have processing for the interaction start at the beginning of audio sent
-        audio_consume_settings = lumenvox_api.define_audio_consume_settings(
-            audio_consume_mode=
-            settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_BATCH,
-            stream_start_location=
-            settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_STREAM_BEGIN
-        )
+    # set audio usage as batch mode, and have processing for the interaction start at the beginning of all audio sent
+    audio_consume_settings = lumenvox_api.define_audio_consume_settings(
+        audio_consume_mode=
+        settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_BATCH,
+        stream_start_location=
+        settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_STREAM_BEGIN)
 
-    if not vad_settings:
-        # use voice activity detection
-        vad_settings = lumenvox_api.define_vad_settings(use_vad=True)
+    # use voice activity detection
+    vad_settings = lumenvox_api.define_vad_settings(use_vad=True)
 
     # Set a default language in case a language is not detected
     if not language_code:
@@ -87,32 +88,92 @@ async def asr_batch_interaction(lumenvox_api,
 
     # Attempt to retrieve a result at this point.
     # The helper function "get_session_final_result" retrieves the final result response of the given session stream.
-    await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
+    result = await lumenvox_api.get_session_final_result(session_stream=session_stream, wait=30)
+
+    # write results to CSV if specified
+    if csv_file:
+        fields = [
+            audio_file,
+            session_id,
+            interaction_id,
+            str(result.final_result_status) if result else 'No result',
+            result.final_result.asr_interaction_result.n_bests[0].asr_result_meta_data.transcript
+            if result else 'No result'
+        ]
+
+        fields_str = ''
+        for f in fields:
+            fields_str += (f + ',') if (fields[-1] != f) else f
+
+        fields_str += '\n'
+        csv_file.write(fields_str)
 
     await lumenvox_api.handle_interaction_close_all(session_stream=session_stream, interaction_id=interaction_id)
 
-
 if __name__ == '__main__':
+    # Modified version of the ASR batch sample script to process multiple audio files and write results to CSV.
+    # sys.argv[1] - CSV file to write to
+    # sys.argv[2] - Directory to read from
+    # (optional) sys.argv[3:] - Audio file extensions to limit to
+
+    if len(sys.argv) < 3:
+        print("Invalid number of arguments")
+        print("sys.argv[1] - CSV file to get audio file paths from")
+        print("sys.argv[2] - CSV file to write to")
+        print("(optional) sys.argv[3:] - Audio file extensions to limit to")
+
+        sys.exit()
+
+    extensions: list = None if len(sys.argv) < 4 else sys.argv[3:]
+
     # Create and initialize the API helper object that will be used to simplify the example code
     lumenvox_api = LumenVoxApiClient()
     lumenvox_api.initialize_lumenvox_api()
 
-    # Here we specify a list of grammars to use for ASR interactions.
+    results_csv = open(sys.argv[2], "a")
+    results_csv.write("audio_file_ref, session_id, interaction_id, final_result_status, transcript\n")
 
+    # Specify your grammars here
     grammar_msgs = [
-        LumenVoxApiClient.inline_grammar_by_file_ref(grammar_reference='../test_data/Grammar/en-US/en_digits.grxml')
+        LumenVoxApiClient.inline_grammar_by_file_ref(
+            grammar_reference='../test_data/Grammar/en-US/en_transcription.grxml'
+        )
     ]
 
-    # the function asr_batch_interaction creates session, and runs an interaction
-    # this needs to be passed as a coroutine into lumenvox_api.run_user_coroutine, so that the event loop
-    # to handle gRPC async messages is created
-    lumenvox_api.run_user_coroutine(
-        asr_batch_interaction(lumenvox_api=lumenvox_api,
-                              audio_file='../test_data/Audio/en/1234-1s-front-1s-end.ulaw',
-                              audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW,
-                              sample_rate_hertz=8000,
-                              language_code='en',
-                              grammar_messages=grammar_msgs,
-                              ), )
+    # loop through files referenced in CSV and run ASR interaction
+    with open(sys.argv[1]) as csv_file:
+        c = False
+        filepath = ''
+
+        for line in csv_file:
+            # skip first line of file
+            if not c:
+                c = True
+                continue
+
+            split_line = line.split(',')
+
+            if extensions:
+                for e in extensions:
+                    if split_line[0].endswith(e):
+                        filepath = split_line[0]
+                        break
+            else:
+                filepath = split_line[0]
+
+            if filepath:
+                lumenvox_api.run_user_coroutine(
+                    asr_batch_interaction(
+                        lumenvox_api=lumenvox_api,
+                        audio_file=filepath,
+                        audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW,
+                        sample_rate_hertz=8000,
+                        language_code='en',
+                        grammar_messages=grammar_msgs,
+                        csv_file=results_csv
+                    ),
+                )
 
     lumenvox_api.shutdown_lumenvox_api_client()
+
+    results_csv.close()

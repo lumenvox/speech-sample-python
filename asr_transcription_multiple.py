@@ -79,7 +79,8 @@ async def create_api_session(lumenvox_api,
                                                                  correlation_id=correlation_id)
 
     await lumenvox_api.session_set_inbound_audio_format(session_stream=session_stream,
-                                                        audio_format=audio_format, sample_rate_hertz=sample_rate_hertz)
+                                                        audio_format=audio_format,
+                                                        sample_rate_hertz=sample_rate_hertz)
 
     global audio_thread_stream_audio
     audio_thread_stream_audio = False
@@ -220,13 +221,13 @@ if __name__ == '__main__':
     # Modified version of the transcription sample script to process multiple audio files and write results to CSV.
     # sys.argv[1] - CSV file to write to
     # sys.argv[2] - Directory to read from
-    # (optional) sys.argv[3:] - Extensions to limit to
+    # (optional) sys.argv[3:] - Audio file extensions to limit to
 
     if len(sys.argv) < 3:
         print("Invalid number of arguments")
         print("sys.argv[1] - CSV file to write to")
         print("sys.argv[2] - Directory to read from")
-        print("(optional) sys.argv[3:] - Extensions to limit to")
+        print("(optional) sys.argv[3:] - Audio file extensions to limit to")
 
         sys.exit()
 

@@ -140,6 +140,12 @@ message GrammarSettings {
   // a timeout error will be raised. Range 1000-2147483647 (~600 hours)
   // Default: 200000 (~3.333 minutes)
   OptionalInt32 load_grammar_timeout_ms = 3;
+
+  // Compatibility mode for certain media server operations. Only change from
+  // the default if you understand the consequences.
+  // Range: 0-1
+  // Default: 0
+  OptionalInt32 compatibility_mode = 4;
 }
 
 // Settings related to recognition results
@@ -162,6 +168,11 @@ message RecognitionSettings {
   // Confidence threshold. Range 0 to 1000; applies to grammar based asr interactions
   // Default: 0
   OptionalInt32 confidence_threshold = 4;
+
+  // Number of milliseconds the ASR should await results before timing out
+  // Possible values: 0 - 1000000
+  // Default: 20000
+  OptionalInt32 decode_timeout = 5;
 }
 
 // Settings related to text Normalization results
@@ -178,6 +189,11 @@ message NormalizationSettings {
   // Set to true to enable redaction of sensitive information
   // Default: false
   OptionalBool enable_redaction = 3;
+  
+  // Number of milliseconds text normalization should await results before timing out
+  // Possible values: 0 - 1000000
+  // Default: 5000
+  OptionalInt32 request_timeout_ms = 4;
 }
 
 // Settings related to Voice Activity Detection (VAD)
@@ -486,6 +502,7 @@ message TtsInlineSynthesisSettings {
 message LoggingSettings {
 
   enum LoggingVerbosity {
+  
     // Logging verbosity is not specified
     LOGGING_VERBOSITY_UNSPECIFIED = 0;
 

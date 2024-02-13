@@ -1095,6 +1095,7 @@ class LumenVoxApiClient:
                                                general_interaction_settings:
                                                settings_msg.GeneralInteractionSettings = None,
                                                embedded_grammars: list = None,
+                                               enable_postprocessing: str = None,
                                                correlation_id: str = None):
         """
         Handle InteractionCreateTranscription (interaction.proto)
@@ -1113,7 +1114,8 @@ class LumenVoxApiClient:
             audio_consume_settings=audio_consume_settings,
             normalization_settings=normalization_settings,
             general_interaction_settings=general_interaction_settings,
-            embedded_grammars=embedded_grammars
+            embedded_grammars=embedded_grammars,
+            enable_postprocessing=self.optional_string(enable_postprocessing)
         )
 
         interaction_request_msg = interaction_msg.InteractionRequestMessage(

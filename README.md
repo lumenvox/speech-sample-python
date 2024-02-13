@@ -121,6 +121,7 @@ functions instead if you prefer.
 > following settings in `lumenvox_helper_function.py`:
 >
 > * `LUMENVOX_API_SERVICE` address of your server
+* `ENABLE_TLS` informs server that a certification should be validated
 > * `deploymentid` your assigned deployment ID in the server
 > * `operatorid` that you wish to use (identifies API user)
 

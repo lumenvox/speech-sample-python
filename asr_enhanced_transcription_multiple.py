@@ -130,35 +130,41 @@ async def asr_transcription_session(lumenvox_api,
                                             embedded_grammars=embedded_grammars)
 
     sem_interp_results = []
-    if result or \
-        len(result.final_result.transcription_interaction_result.n_bests[0].grammar_results[0].semantic_interpretations):
-        for s in \
-                result.final_result.transcription_interaction_result.n_bests[0].grammar_results[0].\
-                        semantic_interpretations:
-            input_text = s.input_text
-            grammar_label = s.grammar_label
-            interpretation_string_value = s.interpretation.fields['interpretation'].string_value
-            interpretation_json = s.interpretation_json
-            confidence = str(s.confidence)
+    transcription_result = result.final_result.transcription_interaction_result if result else None
 
-            full = \
-                "[input_text: " + input_text + \
-                "; grammar_label: " + grammar_label + \
-                "; interpretation_string_value: " + interpretation_string_value + \
-                "; interpretation_json: " + interpretation_json + \
-                "; confidence: " + confidence + "]"
+    if transcription_result:
+        # Need to check if n_bests is populated, then grammar results, then semantic interpretations
+        if len(transcription_result.n_bests) and \
+                len(transcription_result.n_bests[0].grammar_results) and \
+                len(transcription_result.n_bests[0].grammar_results[0].semantic_interpretations):
 
-            sem_interp_results.append(full)
+            # iterate through semantic interpretations
+            for s in \
+                    transcription_result.n_bests[0].grammar_results[0].semantic_interpretations:
+                input_text = s.input_text
+                grammar_label = s.grammar_label
+                interpretation_string_value = s.interpretation.fields['interpretation'].string_value
+                interpretation_json = s.interpretation_json
+                confidence = str(s.confidence)
 
-    # write contents of interaciton if CSV file is provided
+                full = \
+                    "[input_text: " + input_text + \
+                    "; grammar_label: " + grammar_label + \
+                    "; interpretation_string_value: " + interpretation_string_value + \
+                    "; interpretation_json: " + interpretation_json + \
+                    "; confidence: " + confidence + "]"
+
+                sem_interp_results.append(full)
+
+    # write contents of interaction if CSV file is provided
     if csv_file:
         fields = [
             audio_ref,
             session_id,
             interaction_id,
             str(result.final_result_status) if result else 'No result',
-            result.final_result.transcription_interaction_result.n_bests[0].asr_result_meta_data.transcript
-            if result else 'No result',
+            transcription_result.n_bests[0].asr_result_meta_data.transcript
+            if (transcription_result and len(transcription_result.n_bests)) else 'No result',
             ';'.join(str(s) for s in sem_interp_results) if sem_interp_results else 'No grammar results'
         ]
 
@@ -283,6 +289,7 @@ if __name__ == '__main__':
             filename = os.path.join(directory, f)
 
         if filename:
+            print("Reading audio file at", filename)
             lumenvox_api.run_user_coroutine(
                 asr_transcription_session(lumenvox_api,
                                           language_code='en',

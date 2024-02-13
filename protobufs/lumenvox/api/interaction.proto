@@ -194,6 +194,18 @@ message InteractionCreateTranscriptionRequest {
 
   // Optional grammar settings for embedded grammars
   GrammarSettings embedded_grammar_settings = 11;
+
+  // Optional name of a language model (decoder) to use when processing transcription.
+  // Default is to not specify this, allowing engine to use default language decoder
+  OptionalString language_model_name = 12;
+
+  // Optional name of a acoustic model (encoder) to use when processing transcription.
+  // Default is to not specify this, allowing engine to use default language encoder
+  OptionalString acoustic_model_name = 13;
+
+  // Optional custom postprocessing to enhance decoder functionality.
+  // Default is to not specify this, allowing engine to use default postprocessing
+  OptionalString enable_postprocessing = 14;
 }
 
 message InteractionCreateTranscriptionResponse {

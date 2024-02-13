@@ -194,37 +194,57 @@ message PhraseList {
 enum InteractionType {
   // This is not valid type. Indicating empty gRPC message.
   INTERACTION_TYPE_UNSPECIFIED = 0;
+
   // ASR processing interaction
   INTERACTION_TYPE_ASR = 2;
+
   // TTS processing interaction
   INTERACTION_TYPE_TTS = 3;
+
   // Validate grammar content. Can be url, inline or file reference (label)
   INTERACTION_TYPE_GRAMMAR_PARSE = 4;
+
   // Normalization interaction type
   INTERACTION_TYPE_NORMALIZATION = 5;
+
   // Call process analysis interaction type
   INTERACTION_TYPE_CPA = 6;
+
   // Answering machine detection interaction type
   INTERACTION_TYPE_AMD = 7;
+
   // ASR transcription interaction type
   INTERACTION_TYPE_ASR_TRANSCRIPTION = 8;
 }
 
 //
-// List of all interaction sub-types
-enum InteractionSubType{
+// List of all interaction sub-types for ASR Interations
+enum InteractionSubType {
   // This is not valid type. Indicating empty gRPC message.
   INTERACTION_SUB_TYPE_UNSPECIFIED = 0;
+
   // Call process analysis interaction type with grammars
   INTERACTION_SUB_TYPE_GRAMMAR_BASED_CPA = 1;
+
   // Answering machine detection interaction type with grammars
   INTERACTION_SUB_TYPE_GRAMMAR_BASED_AMD = 2;
-  // ASR transcription interaction with multiple grammars
+
+  // Deprecated - ASR transcription interaction with multiple grammars
   INTERACTION_SUB_TYPE_ENHANCED_TRANSCRIPTION = 3;
-  // ASR continuous transcription 
+
+  // Deprecated - ASR continuous transcription 
   INTERACTION_SUB_TYPE_CONTINUOUS_TRANSCRIPTION = 4;
-  // Transcription result with normalized text
+
+  // Deprecated - Transcription result with normalized text
   INTERACTION_SUB_TYPE_TRANSCRIPTION_WITH_NORMALIZATION = 5;
+ 
+  // Notes: enhanced, continous and normalized subtypes should be moved as separate flags
+  // a combination for multiple flags combinations may be possible
+  // for transaction interactions via mrcp (ASR based) there will be a new subtype: 6 
+  // to do : cleanup this comments before release
+
+  // Transcription interaction type with grammars
+  INTERACTION_SUB_TYPE_GRAMMAR_BASED_TRANSCRIPTION = 6;
 }
 
 //
@@ -232,35 +252,52 @@ enum InteractionSubType{
 enum InteractionStatus {
   // This status is not expected or valid to happen. Indicating empty message.
   INTERACTION_STATUS_UNSPECIFIED = 0;
+
   // Interaction is in created only state, no additional processing is done yet.
   INTERACTION_STATUS_CREATED = 1;
+
   // Interaction results are ready. Most results are sent automatically when ready.
   INTERACTION_STATUS_RESULTS_READY = 2;
+
   // Used to indicated successfully closed interaction state
   INTERACTION_STATUS_CLOSED = 3;
 
+  // Used to indicated successfully canceled interaction state
+  INTERACTION_STATUS_CANCELED = 4;
+
   // Audio processing not started yet. Waiting on grammars to be loaded.
   INTERACTION_STATUS_ASR_WAITING_ON_GRAMMARS = 101;
+
   // Audio processing not started yet. Waiting on BARGE_IN event from VAD
   INTERACTION_STATUS_ASR_WAITING_ON_BARGIN = 102;
+
   // Initial status or post BARGE_IN status of interaction, stream processing not started yet
   INTERACTION_STATUS_ASR_STREAM_REQUEST = 103;
+
   // Batch mode, waiting for STOP request
   INTERACTION_STATUS_ASR_STOP_REQUESTED_WAITING = 104;
+
   // ASR started reading stream
   INTERACTION_STATUS_ASR_STREAM_STARTED = 105;
+
   // Set in case of Finalize request
   INTERACTION_STATUS_ASR_STREAM_STOP_REQUESTED = 106;
+
   // Used for CPA and AMD interactions
   INTERACTION_STATUS_ASR_WAITING_FOR_CPA_AMD_RESPONSE = 107;
+
   // No VAD event or interaction finalize, ASR processing timed out
   INTERACTION_STATUS_ASR_TIMEOUT = 109;
+
+  // Audio processing started. Waiting on BARGE_OUT event from VAD
+  INTERACTION_STATUS_ASR_WAITING_ON_BARGEOUT = 110;
 
   // TTS processing
   INTERACTION_STATUS_TTS_PROCESSING = 200;
 
   // Grammar(s) loading in progress, interaction not started yet
   INTERACTION_STATUS_GRAMMAR_PARSE_WAITING_ON_GRAMMARS = 400;
+
   // Interaction processing in progress
   INTERACTION_STATUS_GRAMMAR_PARSE_REQUESTED_PROCESSING = 401;
 
@@ -276,11 +313,15 @@ enum InteractionStatus {
 enum GrammarMode {
   // Mode not specified
   GRAMMAR_MODE_UNSPECIFIED = 0;
+
   // Voice mode
   GRAMMAR_MODE_VOICE = 1;
+
   // DTMF mode
   GRAMMAR_MODE_DTMF = 2;
+
   // Voice and DTMF mode
+  //Deprecated - should not be used
   GRAMMAR_MODE_VOICE_AND_DTMF = 3;
 }
 
@@ -306,7 +347,9 @@ message Event {
 // a single event with timestamp to be logged to the database
 // the LogEvent will be returned via reporting api
 message LogEvent {
-  //Log Event Timestamp (UTC)
+  // Log Event Timestamp (UTC)
   google.protobuf.Timestamp time_stamp= 1;
+
+  // can be either a VadEvent or a SessionEvent
   Event event = 2;
 }
