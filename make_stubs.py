@@ -1,19 +1,15 @@
+"""
+This file imports the proto stub files in the correct locations (/lumenvox and /google from root).
+"""
 import os
 
 
-# This now correctly imports the proto stub files in the correct locations (/lumenvox and /google from root).
-#
-# Previous imports and folder structure references were wrong. Please use this method. Specifically, we need to
-# make sure that proto_pb files are generated in the correct path locations, such as lumenvox/common/health.proto
-# and not in some random location (root, stubs, service) since these references will break.
-#
 def import_proto_files():
-    # find and import all .proto files in the protobuf folder (from git submodule)
+    # Find and import all .proto files in the protobuf folder (from git submodule).
     grpc_protos = [
-                       'lumenvox/api/reporting.proto',
-                       'lumenvox/api/lumenvox.proto',
-
-                       ]  # Add more proto files to this list as needed
+        'lumenvox/api/reporting.proto',
+        'lumenvox/api/lumenvox.proto',
+    ]  # Add more proto files to this list as needed.
 
     for proto_input in grpc_protos:
         print('Generating stubs for ', proto_input)
@@ -24,15 +20,15 @@ def import_proto_files():
                   '{}'.format(proto_input))
 
     lumenvox_protos = ['lumenvox/api/interaction.proto',
-                        'lumenvox/api/audio_formats.proto',
-                        'lumenvox/api/common.proto',
-                        'lumenvox/api/global.proto',
-                        'lumenvox/api/interaction.proto',
-                        'lumenvox/api/optional_values.proto',
-                        'lumenvox/api/results.proto',
-                        'lumenvox/api/session.proto',
-                        'lumenvox/api/settings.proto',
-    ]  # Add more proto files to this list as needed
+                       'lumenvox/api/audio_formats.proto',
+                       'lumenvox/api/common.proto',
+                       'lumenvox/api/global.proto',
+                       'lumenvox/api/interaction.proto',
+                       'lumenvox/api/optional_values.proto',
+                       'lumenvox/api/results.proto',
+                       'lumenvox/api/session.proto',
+                       'lumenvox/api/settings.proto',
+                       ]  # Add more proto files to this list as needed
 
     for proto_input in lumenvox_protos:
         print('Generating stubs for ', proto_input)

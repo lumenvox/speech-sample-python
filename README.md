@@ -7,7 +7,7 @@ the LumenVox API over gRPC using the published `.proto` definition
 files.
 
 It is designed to work optimally with a recent version of Python. 
-We recommend at least version 3.9, but please refer to the latest
+We recommend version 3.9 or 3.10, but please refer to the latest
 version available.
 
 ## Virtual Environment
@@ -16,7 +16,7 @@ Creating and using a virtual environment for your Python project will
 help greatly, and allow you to utilize the project dependencies file
 with ease.
 
-Virtual Environments (or venv) is too deep a topic to cover here, so
+Virtual Environments (or venv) are too deep a topic to cover here, so
 please review online references of how best to create these. There are
 several good guides available, such as this one:
 https://packaging.python.org/en/latest/guides/installing-using-pip-and-virtual-environments/
@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-To learn how to use protobuf, please follow the excellent tutorials
+To learn how to use protocol buffers or protobuf, please follow the excellent tutorials
 provided by Google at:
 
 [https://developers.google.com/protocol-buffers/docs/tutorials](https://developers.google.com/protocol-buffers/docs/tutorials)
@@ -57,7 +57,7 @@ Before using the .proto (protobuf definition) files, they need to
 be `compiled` into a format that is compatible with the language
 being used. In this case, Python.
 
-See the [this page](https://github.com/protocolbuffers/protobuf)
+See [this page](https://github.com/protocolbuffers/protobuf)
 for details about how to use protoc to generate the API stubs.
 
 There is a helper script you can run to easily generate these files:
@@ -73,6 +73,7 @@ LumenVox API using the gRPC protocol. This is needed in order
 to run the sample applications described here.
 
 ## TLS Connectivity
+User connectivity data can be viewed or modified in `lumenvox_api_user_connection_data.py`.
 
 These samples assume TLS connectivity is used between the Python client
 and your LumenVox API server. This is controlled by the `ENABLE_TLS` flag.
@@ -104,42 +105,40 @@ will likely differ from this, so please use the correct setting. You may
 also need to update your hosts file or DNS to correctly define this
 domain name to the Kubernetes IP address, depending on your environment.
 
-## LumenVox Helper Functions
+## LumenVox API Handler and Helper Functions
 
-The bulk of the relatively complex code that communicates with
-the LumenVox API, along with a number of helper functions is
-located in the `lumenvox_helper_function.py` file. This is used
-for all examples, and greatly simplifies the amount of coding
-needed to run and understand how to interact with the API.
+The bulk of the code that communicates with the LumenVox API can be
+found in lumenvox_api_handler.py. The majority of functions in this 
+file are built to wrap over the RPCs and protocol buffer messages
+used to interact with the API. Additionally, the code in
+lumenvox_api_helper_common.py provides helper functions to ease the
+use of common messages, such as grammars and settings. Both of these
+files are used throughout the sample code. 
 
-Once you become more familiar with the API, you can look at how
-these functions operate, and then work on your own specialized
-functions instead if you prefer.
+Upon gaining familiarity with the API, a user can examine the operations
+these functions perform, and, if preferred, build more specialized 
+solutions towards working with the API. 
 
 > Before running any tests, please be sure to specify the
 > address of your target LumenVox server by updating the
-> following settings in `lumenvox_helper_function.py`:
+> following settings in `lumenvox_api_user_connection_data.py`:
 >
 > * `LUMENVOX_API_SERVICE` address of your server
-* `ENABLE_TLS` informs server that a certification should be validated
-> * `deploymentid` your assigned deployment ID in the server
-> * `operatorid` that you wish to use (identifies API user)
+> * `ENABLE_TLS` informs server that a certification should be validated
+> * `deployment_id` your assigned deployment ID in the server
+> * `operator_id` that you wish to use (identifies API user)
 
-Note that if you do not know your assigned `deploymentid`, you may
+Note that if you do not know your assigned `deployment_id`, you may
 try using the default installed with the system, which is the value
 included in the file. If this works, you can practice with this, but
 at some point you should remove this temporary startup deployment ID
 and use a more permanent one.
 
-Similarly, for the `operatorid`, if you do not have some identifier
+Similarly, for the `operator_id`, if you do not have some identifier
 that you wish to use for tracking who is making API requests, then
 you can use the sample one included for now. In production, it is
 best to use your own operator ID values to understand how or what is
 making API calls, which can be seen in the logs.
-
-Using this common helper code, you can see how relatively simple
-it is to understand the steps involved in performing the following
-example operations
 
 ### Callbacks
 
@@ -162,37 +161,43 @@ the first message sent back to the API client after `SessionCreate`
 is called. This session_id value for this message is used as a
 parameter for other API calls.
 
-### Threading Model
+### Asyncio Use
 
 Since callbacks can be received at any time, it is generally practical
 to use a worker thread to listen for these notifications and process
-them when they arrive. In this sample code, such a worker thread is
-started within the `run_user_coroutine` call.
+them when they arrive. In this sample code, the `asyncio` library is used
+to simulate threading processes; functions such as those that read from 
+the API are split off into tasks or coroutines to simulate threading
+functionality.
 
 Any callback messages received by the API client code (such as these
-examples), will be received and handled by the session-specific 
-`response_handler` routine, which in these examples, simply places the 
-callback messages into the appropriate queues that correspond to the 
-specified target session_id.
+samples), will be received and handled by tasks that read from the stream
+(task_read_session_streams in lumenvox_api_handler.py, for example).
+A task like this will place callback messages received from the API into
+the appropriate queues define at the top of lumenvox_api_handler.py. 
 
 Note that this configuration should allow for multiple concurrent
-session operations to be performed, however these simple examples
-do not show this.
+session operations to be performed, however these samples only demonstrate
+single-session use.
 
 For production code, it is assumed that some more structured
 approach is taken for processing these callback messages. The aim
 of this sample code was simplicity using Python scripting that
 many people will be familiar with.
 
+It should be noted that the use of `asyncio` libraries involves heavy use of
+`await/async` syntax. For more information on `asyncio`, please refer to the
+official Python documentation [here](https://docs.python.org/3.10/library/asyncio.html).
+
 ### Audio Streaming
 
-Note that in the examples performing audio streaming into the ASR,
-a very simple loop is used with a small delay to emulate real-world
-audio streaming from a production application.
-
-For the sake of creating the simplest, and most easily understood
-code, this approach was taken rather than creating another worker
-thread to perform this audio streaming in the background.
+Several sample files make use of audio streaming. To help achieve this, 
+an `AudioHandler` class in audio_handler.py was created to facilitate the
+audio streaming process. This process makes use of `asyncio` tasks to simulate
+threading, sending audio concurrently while the main task waits for the result.
+This approach was provided as a way to both send audio and track the state of the 
+process in the sample code. Other approaches, however, may be used in production
+environments. 
 
 ### Production Applications
 
@@ -241,27 +246,25 @@ Please visit their website for details and conditions of use.
 
 ## Batch Mode ASR Decode
 
-See the `asr_batch_example.py` script for an example of how to
+See the `asr_batch_sample.py` script for an example of how to
 perform a batch-mode ASR decode using the Speech API.
 
-A batch-mode decode does not use Voice Activity Detection (VAD)
-and instead, loads all the audio into the system at once, then
-decodes are processed without waiting for VAD activity to
-trigger it. This may be faster in certain situations, however it
-also behaves differently due to the way this is implemented.
+An ASR interaction utilizing batch processing has its audio sent
+all at once. All the audio sent before the interaction is created
+is then processed. 
 
-## Streaming ASR Decode Example
+## Streaming ASR Decode Sample
 
-See the `asr_streaming_example.py` script for an example of how to
+See the `asr_streaming_sample.py` script for an example of how to
 perform a streaming-mode ASR decode using the Speech API.
 
 A streaming-mode decode uses Voice Activity Detection (VAD),
 and streams chunks of audio into the system, relying on
 VAD to determine start and end of speech to trigger processing.
 
-## Streaming Transcription Example
+## Transcription Streaming Sample
 
-See the `asr_transcription_example.py` script for an example of
+See the `transcription_sample.py` script for an example of
 how to perform a streaming transcription using the Speech API.
 
 Transcription is very similar to grammar-based ASR decodes,
@@ -270,35 +273,26 @@ transcription mode instead of grammar-based ASR decodes.
 
 Transcription can be performed in realtime using this streaming
 example, or it could be used in batch-mode operations similar to
-how the Batch Mode ASR example is used. This batch-mode is sometimes
+how the Batch Mode ASR sample is used. This batch-mode is sometimes
 called offline transcription mode may be slightly more efficient
 and faster than realtime streaming, but requires all the audio
 be sent at once, so may or may not be suitable for your use case.
+Additionally, transcription with batch processing can be performed
+by using a batch ASR interaction with a transcription grammar.
 
 Partial results can be enabled using the `enable_partial_results`
 field in RecognitionSettings. They are turned off by default, but
 by setting `enable_partial_results.value` to `True`, partial
 results can be received.
 
-### `asr_transcription_multiple.py `
-
-This script allows for running multiple streaming transcription interactions at once, given the audio files provided in
-the system arguments. The results of the interactions will be written to the specified CSV file.
-
-```shell
-py asr_transcription_multiple.py ['name of file to write to'] [directory containing audio files] [optional: extensions to limit to]
-# ex: 
-# py asr_transcription_multiple.py transcription_results.csv C:\audio_files .ulaw
-```
-
 ### Dialects
-The `asr_transcription_dialect_example.py` uses the streaming transcription
+The `transcription_dialect_example.py` uses the streaming transcription
 code to demonstrate the differences between results based on dialect (ex. 
 'en-us' vs. 'en-gb').
 
 ## Enhanced Transcription Example
 
-See the `asr_enhanced_transcription.py` script for an example of
+See the `enhanced_transcription_sample.py` script for an example of
 how to perform an enhanced transcription using the Speech API. This is 
 based on the code used for the streaming transcription example.
 
@@ -308,7 +302,7 @@ within the results should the content of the audio match any of the specified
 grammars.
 
 ## Normalized Transcription Example
-See the `asr_transcription_normalization.py` script for an example of
+See the `transcription_normalization_sample.py` script for an example of
 how to perform an enhanced transcription using the Speech API. This is 
 based on the code used for the streaming transcription example.
 
@@ -317,7 +311,7 @@ upon interaction creation. This will include additional, normalization-specific
 output, on top of the transcript received basic transcription.
 
 ## Transcription Using Alias
-See the `asr_aliaslexicon_transcription_example.py` script for an example of
+See the `alias_lexicon_transcription_sample.py` script for an example of
 how to perform a transcription interaction with aliases. This is 
 based on the code used for the batch ASR example, as this requires a grammar.
 
@@ -327,7 +321,7 @@ words as aliases under a lexeme in the lexicon file.
 
 ## Text To Speech Example
 
-The `tts_example.py` script demonstrated a simple TTS synthesis.
+The `tts_sample.py` script demonstrated a simple TTS synthesis.
 In the example, an SSML file is loaded, which contains SSML marks
 to show some moderately complex functionality and the level of
 details that can be returned from the synthesis result.
@@ -337,55 +331,24 @@ so that you can listen to it if desired.
 
 ## Grammar Parse Example
 
-See the `grammar_parse_example.py` script for an example of how to
-perform a grammar parse interaction using the Speech API.
+See the `grammar_parse_sample.py` script using the LumenVox API.
 
 Grammar parse interactions will also accept builtin grammars or 
 URL-referenced grammars if one is not locally available. 
 
-## Streaming CPA and AMD Decodes
+## AMD and CPA Streaming Decodes
 
-See the `cpa_amd_streaming_example.py` script for an example of how to
+See the `amd_sample.py` or `cpa_sample.py` scripts for an example of how to
 perform a streaming-mode Call Progress Analysis (CPA) and Tone Detection
-(AMD) decodes using the Speech API.
+(AMD) decodes using the LumenVox API.
 
 A streaming-mode decode uses Voice Activity Detection (VAD),
 and streams chunks of audio into the system, relying on
 VAD to determine start and end of speech to trigger processing.
 
-The CPA example uses the default CPA grammar, which enables classification
-of the following:
-
-* Human Residence (human speech less than 1800ms)
-* Human Business (human speech between 1800 and 3000ms)
-* Unknown Speech (human speech > 3000ms - assumed to be "machine")
-* Unknown Silence (no human speech)
-
-The example include an audio of Human Residence, which is the expected result
-
-For AMD testing, the sample uses the default AMD grammar, which can
-classify a number of things, including
-
-* FAX Tone
-* Busy Tone (disabled by default)
-* Special Information Tones (SIT)
-* Answering machine beep
-
-The example include a Fax tone audio, which is the expected result
-
-## Voice Biometrics Example
-
-The `vb_enroll_and_verify_example.py` script demonstrates an enrollment and
-verification in the Voice Biometrics system. This example makes use of some
-new audio files which can be found in the `test_data/VB` directory.
-
-Note that in order for this test to work, you will need to define the correct
-endpoints for both the Biometric API and the Management API. Like the Speech
-API, you will need to update your hosts file or DNS to make this work.
-
 ## Normalize Text Example
 
-See the `normalize_text_example.py` script for an example of how to
+See the `normalize_text_sample.py` script for an example of how to
 perform a "normalize text" interaction using the Speech API.
 
 Normalize text interactions require a text transcript and normalization
