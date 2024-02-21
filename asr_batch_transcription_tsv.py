@@ -96,6 +96,8 @@ def process_interactions(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCl
                 continue
 
             split_line = line.split('\t')
+            # Take out any line-ending characters or tabs from the string. This is needed to check for extensions.
+            split_line[0] = split_line[0].rstrip('\n').rstrip('\r').rstrip('\t')
 
             # Grab the filepath from the TSV entry.
             # Check for extensions if provided.
@@ -108,9 +110,6 @@ def process_interactions(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCl
                 filepath = split_line[0]
 
             if filepath:
-                # Take out any line-ending characters or tabs from the string.
-                filepath = filepath.rstrip('\n').rstrip('\r').rstrip('\t')
-
                 # Construct interaction data for the current audio file.
                 interaction_data = AsrInteractionData()
                 interaction_data.language_code = 'en-us'
