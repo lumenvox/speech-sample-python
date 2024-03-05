@@ -71,6 +71,12 @@ service ReportingAPIService {
       returns (RetrieveArchiveDataResponse);
 
   //
+  // Retrieves stream data from the archive by its storage_id field.
+  //
+  rpc RetrieveArchiveDataStream(RetrieveArchiveDataRequest)
+      returns (stream RetrieveArchiveDataResponse);
+
+  //
   // RetrieveStorageId retrieves the storage_id from archive by its hash value.
   //
   rpc RetrieveStorageId(RetrieveStorageIdRequest)
@@ -126,6 +132,18 @@ service ReportingAPIService {
   //
   rpc LicenseStatusReportPull(LicenseStatusReportPullRequest) 
       returns (LicenseStatusReportPullResponse);
+
+  //
+  // Export analysis set data including audio and grammars.
+  //
+  rpc ExportAnalysisSet(ExportAnalysisSetRequest) 
+      returns (stream ExportAnalysisSetResponse);
+
+  //
+  // Import an analysis set from exported data.
+  //
+  rpc ImportAnalysisSet(stream ImportAnalysisSetRequest) 
+      returns (ImportAnalysisSetResponse);
 }
 
 // ======== messages below  ===============================================
@@ -417,7 +435,7 @@ message InteractionDetails {
   string transcript_semantic = 13;
   // Original interaction result
   InteractionResultSet original_result = 14;
-  // Tuned interaction result
+    // Tuned interaction result
   InteractionResultSet tuned_result = 15;
   //Analysis status text
   string status_text =  16;
@@ -764,4 +782,46 @@ message LicenseStatusReportPullResponse{
   string license_status_report_json = 2;
   // response status
   google.rpc.Status status = 3;
+}
+
+//
+// Describes an Analysis Set export request
+//
+message ExportAnalysisSetRequest{
+  // UUID of the analysis set selected for export
+  string analysis_set_id = 1;
+}
+
+//
+// Describes an Analysis Set export response
+//
+message ExportAnalysisSetResponse{
+  // The export statsus.
+  google.rpc.Status status = 1;
+  // UUID of the analysis set selected for export
+  string analysis_set_id = 2;
+  // Description of the exported analysis set
+  string analysis_set_description = 3;
+  // archived analysis set data
+  bytes archived_data = 4;
+  // Error description in case of failures
+  string status_message = 5;
+}
+
+message ImportAnalysisSetRequest{
+  // UUID of the analysis set selected for export
+  string analysis_set_id = 1;
+  // Description of the imported analysis set
+  string analysis_set_description = 2;
+  // archived analysis set data
+  bytes archived_data = 3;
+}
+
+message ImportAnalysisSetResponse{
+  // The import statsus.
+  google.rpc.Status status = 1;
+  // UUID of the imported analysis set
+  string analysis_set_id = 2;
+  // Error description in case of failures
+  string status_message = 3;
 }

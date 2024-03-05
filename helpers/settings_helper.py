@@ -33,7 +33,7 @@ def define_general_interaction_settings(secure_context: bool = None, custom_inte
 
 def define_grammar_settings(
         default_tag_format: int = settings_msg.GrammarSettings.TagFormat.TAG_FORMAT_SEMANTICS_1_2006,
-        ssl_verify_peer: bool = True, load_grammar_timeout_ms: int = 200000) \
+        ssl_verify_peer: bool = None, load_grammar_timeout_ms: int = None) \
         -> settings_msg.GrammarSettings:
     """
     Construct a GrammarSettings message. See settings.proto for more information.
@@ -50,9 +50,9 @@ def define_grammar_settings(
     return grammar_settings
 
 
-def define_recognition_settings(max_alternatives: int = 1, trim_silence_value: int = 970,
-                                enable_partial_results: bool = True, confidence_threshold: int = 0,
-                                decode_timeout: int = 20000) -> settings_msg.RecognitionSettings:
+def define_recognition_settings(max_alternatives: int = None, trim_silence_value: int = None,
+                                enable_partial_results: bool = None, confidence_threshold: int = None,
+                                decode_timeout: int = None) -> settings_msg.RecognitionSettings:
     """
     Construct a RecognitionSettings message. See settings.proto for more information.
     The defaults are set in the function definition
@@ -65,39 +65,40 @@ def define_recognition_settings(max_alternatives: int = 1, trim_silence_value: i
     :return: RecognitionSettings protocol buffer message (settings.proto).
     """
     recognition_settings = settings_msg.RecognitionSettings(
-        max_alternatives=optional_int32(max_alternatives),
-        trim_silence_value=optional_int32(trim_silence_value),
-        enable_partial_results=optional_bool(enable_partial_results),
-        confidence_threshold=optional_int32(confidence_threshold),
-        decode_timeout=optional_int32(decode_timeout))
+        max_alternatives=optional_int32(max_alternatives) if max_alternatives is not None else None,
+        trim_silence_value=optional_int32(trim_silence_value) if trim_silence_value is not None else None,
+        enable_partial_results=optional_bool(enable_partial_results) if enable_partial_results is not None else None,
+        confidence_threshold=optional_int32(confidence_threshold) if confidence_threshold is not None else None,
+        decode_timeout=optional_int32(decode_timeout) if decode_timeout is not None else None)
 
     return recognition_settings
 
 
-def define_normalization_settings(enable_inverse_text: bool = False, enable_punctuation_capitalization: bool = False,
-                                  enable_redaction: bool = False) -> settings_msg.NormalizationSettings:
+def define_normalization_settings(enable_inverse_text: bool = None, enable_punctuation_capitalization: bool = None,
+                                  enable_redaction: bool = None, request_timeout_ms: int = None) \
+        -> settings_msg.NormalizationSettings:
     """
     Constructs a NormalizationSettings message. See settings.proto for more information.
+    :param request_timeout_ms: Number of milliseconds text normalization should await results before timing out.
     :param enable_inverse_text: Set to true to enable inverse text normalization.
     :param enable_punctuation_capitalization: Set to true to enable punctuation and capitalization normalization.
     :param enable_redaction: Set to true to enable redaction of sensitive information.
     :return: NormalizationSettings protocol buffer message (settings.proto).
     """
     normalization_settings = settings_msg.NormalizationSettings(
-        enable_inverse_text=optional_bool(enable_inverse_text),
-        enable_punctuation_capitalization=optional_bool(enable_punctuation_capitalization),
-        enable_redaction=optional_bool(enable_redaction))
+        enable_inverse_text=optional_bool(enable_inverse_text) if enable_inverse_text is not None else None,
+        enable_punctuation_capitalization=optional_bool(enable_punctuation_capitalization)
+        if enable_punctuation_capitalization is not None else None,
+        enable_redaction=optional_bool(enable_redaction) if enable_redaction is not None else None,
+        request_timeout_ms=optional_int32(request_timeout_ms) if request_timeout_ms is not None else None)
 
     return normalization_settings
 
 
-def define_audio_consume_settings(audio_channel: int = 0,
-                                  audio_consume_mode: int =
-                                  settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_STREAMING,
-                                  stream_start_location: int =
-                                  settings_msg.AudioConsumeSettings.StreamStartLocation.
-                                  STREAM_START_LOCATION_STREAM_BEGIN,
-                                  start_offset_ms: int = 0, audio_consume_max_ms: int = 0) \
+def define_audio_consume_settings(audio_channel: int = None,
+                                  audio_consume_mode: int = None,
+                                  stream_start_location: int = None,
+                                  start_offset_ms: int = None, audio_consume_max_ms: int = None) \
         -> settings_msg.AudioConsumeSettings:
     """
     Constructs an AudioConsumeSettings message. See settings.proto for more information.
@@ -111,23 +112,19 @@ def define_audio_consume_settings(audio_channel: int = 0,
     :return: AudioConsumeSettings protocol buffer message (settings.proto).
     """
     audio_consume_settings = settings_msg.AudioConsumeSettings(
-        audio_channel=optional_int32(audio_channel),
+        audio_channel=optional_int32(audio_channel) if audio_channel is not None else None,
         audio_consume_mode=audio_consume_mode,
         stream_start_location=stream_start_location,
-        start_offset_ms=optional_int32(start_offset_ms),
-        audio_consume_max_ms=optional_int32(audio_consume_max_ms))
+        start_offset_ms=optional_int32(start_offset_ms) if start_offset_ms is not None else None,
+        audio_consume_max_ms=optional_int32(audio_consume_max_ms) if audio_consume_max_ms is not None else None)
 
     return audio_consume_settings
 
 
-def define_vad_settings(use_vad: bool = True,
-                        barge_in_timeout_ms: int = -1,
-                        end_of_speech_timeout_ms: int = -1,
-                        noise_reduction_mode: int =
-                        settings_msg.VadSettings.NoiseReductionMode.NOISE_REDUCTION_MODE_DEFAULT,
-                        bargein_threshold: int = 50, eos_delay_ms: int = 800, snr_sensitivity: int = 50,
-                        stream_init_delay: int = 100, volume_sensitivity: int = 50,
-                        wind_back_ms: int = 480) -> settings_msg.VadSettings:
+def define_vad_settings(use_vad: bool = True, barge_in_timeout_ms: int = None, end_of_speech_timeout_ms: int = None,
+                        noise_reduction_mode: int = None, bargein_threshold: int = None, eos_delay_ms: int = None,
+                        snr_sensitivity: int = None, stream_init_delay: int = None, volume_sensitivity: int = None,
+                        wind_back_ms: int = None) -> settings_msg.VadSettings:
     """
     Constructs a VadSettings message. See settings.proto for more information.
     :param use_vad: Enables VAD processing.
@@ -145,22 +142,23 @@ def define_vad_settings(use_vad: bool = True,
     :return: VadSettings protocol buffer message (settings.proto).
     """
     vad_settings = settings_msg.VadSettings(
-        use_vad=optional_bool(use_vad),
-        barge_in_timeout_ms=optional_int32(barge_in_timeout_ms),
-        bargein_threshold=optional_int32(bargein_threshold),
+        use_vad=optional_bool(use_vad) if use_vad is not None else None,
+        barge_in_timeout_ms=optional_int32(barge_in_timeout_ms) if barge_in_timeout_ms is not None else None,
+        bargein_threshold=optional_int32(bargein_threshold) if bargein_threshold is not None else None,
         noise_reduction_mode=noise_reduction_mode,
-        end_of_speech_timeout_ms=optional_int32(end_of_speech_timeout_ms),
-        eos_delay_ms=optional_int32(eos_delay_ms),
-        snr_sensitivity=optional_int32(snr_sensitivity),
-        stream_init_delay=optional_int32(stream_init_delay),
-        volume_sensitivity=optional_int32(volume_sensitivity),
-        wind_back_ms=optional_int32(wind_back_ms))
+        end_of_speech_timeout_ms=optional_int32(end_of_speech_timeout_ms)
+        if end_of_speech_timeout_ms is not None else None,
+        eos_delay_ms=optional_int32(eos_delay_ms) if eos_delay_ms is not None else None,
+        snr_sensitivity=optional_int32(snr_sensitivity) if snr_sensitivity is not None else None,
+        stream_init_delay=optional_int32(stream_init_delay) if stream_init_delay is not None else None,
+        volume_sensitivity=optional_int32(volume_sensitivity) if volume_sensitivity is not None else None,
+        wind_back_ms=optional_int32(wind_back_ms) if wind_back_ms is not None else None)
 
     return vad_settings
 
 
-def define_amd_settings(amd_enable: bool = True, fax_enable: bool = True, sit_enable: bool = True,
-                        busy_enable: bool = True, tone_detect_timeout_ms: int = None) -> settings_msg.AmdSettings:
+def define_amd_settings(amd_enable: bool = None, fax_enable: bool = None, sit_enable: bool = None,
+                        busy_enable: bool = None, tone_detect_timeout_ms: int = None) -> settings_msg.AmdSettings:
     """
     Constructs an AmdSettings message. See settings.proto for more information.
     :param amd_enable: Enable answering machine beep detection.
@@ -172,16 +170,18 @@ def define_amd_settings(amd_enable: bool = True, fax_enable: bool = True, sit_en
     :return: AmdSettings protocol buffer message (settings.proto).
     """
     amd_settings = settings_msg.AmdSettings(
-        amd_enable=optional_bool(amd_enable), fax_enable=optional_bool(fax_enable),
-        sit_enable=optional_bool(sit_enable), busy_enable=optional_bool(busy_enable),
+        amd_enable=optional_bool(amd_enable) if amd_enable is not None else None,
+        fax_enable=optional_bool(fax_enable) if fax_enable is not None else None,
+        sit_enable=optional_bool(sit_enable) if sit_enable is not None else None,
+        busy_enable=optional_bool(busy_enable) if busy_enable is not None else None,
         tone_detect_timeout_ms=optional_int32(tone_detect_timeout_ms)
         if (tone_detect_timeout_ms or tone_detect_timeout_ms == 0) else None)
 
     return amd_settings
 
 
-def define_cpa_settings(human_residence_time_ms: int = 1800, human_business_time_ms: int = 3000,
-                        unknown_silence_timeout_ms: int = 5000, max_time_from_connect_ms: int = 0) \
+def define_cpa_settings(human_residence_time_ms: int = None, human_business_time_ms: int = None,
+                        unknown_silence_timeout_ms: int = None, max_time_from_connect_ms: int = None) \
         -> settings_msg.CpaSettings:
     """
     Constructs a CpaSettings message. See settings.proto for more information.
@@ -194,10 +194,13 @@ def define_cpa_settings(human_residence_time_ms: int = 1800, human_business_time
     :return: CpaSettings protocol buffer message (settings.proto).
     """
     cpa_settings = settings_msg.CpaSettings(
-        human_residence_time_ms=optional_int32(human_residence_time_ms),
-        human_business_time_ms=optional_int32(human_business_time_ms),
-        unknown_silence_timeout_ms=optional_int32(unknown_silence_timeout_ms),
-        max_time_from_connect_ms=optional_int32(max_time_from_connect_ms))
+        human_residence_time_ms=optional_int32(human_residence_time_ms)
+        if human_residence_time_ms is not None else None,
+        human_business_time_ms=optional_int32(human_business_time_ms) if human_business_time_ms is not None else None,
+        unknown_silence_timeout_ms=optional_int32(unknown_silence_timeout_ms)
+        if unknown_silence_timeout_ms is not None else None,
+        max_time_from_connect_ms=optional_int32(max_time_from_connect_ms)
+        if max_time_from_connect_ms is not None else None)
 
     return cpa_settings
 

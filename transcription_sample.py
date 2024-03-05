@@ -1,6 +1,6 @@
 """
 Transcription Sample
-This script will run through a session utilizing a Transcription interaction.
+This script will run through a session utilizing a streaming Transcription interaction.
 
 Refer to the integration diagrams found here:
 https://developer.lumenvox.com/4.6.0/asr-integration#section/INTEGRATION-WORKFLOWS/Transcription
@@ -134,11 +134,19 @@ async def transcription(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCli
         asyncio.create_task(transcription_interaction_data.audio_handler.push_audio_chunks())
 
     ####### Get Result #######
-    # Call get_streaming_response which runs a loop attempting to receive the final result message as audio is being
-    # pushed and processed.
-    final_result = \
-        await lumenvox_api_client.get_streaming_response(
-            session_stream=session_stream, audio_push_finish_event=audio_push_finish_event)
+    # If not using VAD, then InteractionFinalizeProcessing needs to be called.
+    if not transcription_interaction_data.vad_settings.use_vad.value:
+        await audio_push_finish_event.wait()
+        await lumenvox_api_client.interaction_finalize_processing(
+            session_stream=session_stream, interaction_id=interaction_id, correlation_id=correlation_id)
+        final_result = await lumenvox_api_client.get_session_final_result(session_stream=session_stream)
+    else:
+        # Call get_streaming_response which runs a loop attempting to receive the final result message as audio is being
+        # pushed and processed.
+        # Adjust the wait parameter of get_streaming_response if having issues getting the result in time.
+        final_result = \
+            await lumenvox_api_client.get_streaming_response(
+                session_stream=session_stream, audio_push_finish_event=audio_push_finish_event)
 
     ####### InteractionClose #######
     # Once we receive the result and there's nothing left to do, we close the interaction.
@@ -203,7 +211,7 @@ def transcription_interaction_data_setup(lumenvox_api_client: lumenvox_api_handl
     stream_start_location = (
         settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
 
-    # Determine whether to use VAD or not (VAD is required for Transcription streaming interactions).
+    # Set to True to enable VAD.
     use_vad = True
     # For audio with pauses, it's important to set this so that we receive a result for the whole audio, and not just
     # the first portion (as seen with The Great Gatsby audio file).
@@ -211,12 +219,15 @@ def transcription_interaction_data_setup(lumenvox_api_client: lumenvox_api_handl
 
     # This Recognition setting can be used to enable partial results.
     enable_partial_results = False
+    # This timeout value is set so the longer audio files, such as the one used in this sample, can be processed fully.
+    decode_timeout = 70000
 
     audio_consume_settings = (
         settings_helper.define_audio_consume_settings(audio_consume_mode=audio_consume_mode,
                                                       stream_start_location=stream_start_location))
     recognition_settings = (
-        settings_helper.define_recognition_settings(enable_partial_results=enable_partial_results))
+        settings_helper.define_recognition_settings(enable_partial_results=enable_partial_results,
+                                                    decode_timeout=decode_timeout))
     vad_settings = settings_helper.define_vad_settings(use_vad=use_vad, eos_delay_ms=eos_delay_ms)
 
     interaction_data.audio_consume_settings = audio_consume_settings
