@@ -9,7 +9,9 @@ RUN adduser --disabled-password --gecos "" ${APP_USER} && \
     seq 1 8 | xargs -I{} mkdir -p /usr/share/man/man{} && \
     apt-get update && apt-get install -y --no-install-recommends $RUN_DEPS && \
     update-ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    pip install --upgrade pip && \
+    pip install setuptools==65.5.1
 
 # define where the same code will be installed
 WORKDIR /code/
@@ -23,6 +25,7 @@ ENV VIRTUAL_ENV=/code/venv
 # Generate virtual environment, activate it, install dependencies and create proto stubs
 RUN python3 -m venv $VIRTUAL_ENV && \
     . $VIRTUAL_ENV/bin/activate && \
+    pip install --upgrade pip && \
     pip install -r requirements.txt && \
     python make_stubs.py
 
