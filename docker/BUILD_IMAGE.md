@@ -18,7 +18,7 @@ If you wish to build your own version of this image, you can use the
 following command from the project root:
 
 ```shell
-docker build -t lumenvox/speech-sample-python .
+docker build -f docker/Dockerfile -t lumenvox/speech-sample-python .
 ```
 
 ## Running the Container
