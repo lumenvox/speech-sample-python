@@ -2,7 +2,7 @@
 
 This page will describe the process and other material involved in running the sample publicly available on GitHub.
 
-The goal of this project is to demonstrate interaction with the LumenVox API via Python 3.9-3.10 and gRPC libraries. 
+The goal of this project is to demonstrate interaction with the LumenVox API via Python 3.10 and gRPC libraries. 
 Due to its high-level nature, Python was chosen to more clearly demonstrate the routines that may take place when 
 perform API interactions. As gRPC supports many other programming languages however, it should be emphasized that Python
 was used only for sampling and that the choice of language for integration should be informed by business requirements.
@@ -52,7 +52,7 @@ available:
 # To run amd_sample.py, for example:
 python amd_sample.py
 ```
-Depending on the system and its current installations, `python3` could also be `py`, `python3.9`, or `python3.10`.
+Depending on the system and its current installations, `python3` could also be `py` or `python3.10`.
 
 Running the sample scripts will provide output involving messages sent and received to and from the LumenVox API. This 
 includes the final results, though each script will manually print the final results for clarity. For best understanding

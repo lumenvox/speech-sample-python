@@ -6,9 +6,7 @@ This is a sample project that demonstrates how to communicate with
 the LumenVox API over gRPC using the published `.proto` definition
 files.
 
-It is designed to work optimally with a recent version of Python. 
-We recommend version 3.9 or 3.10, but please refer to the latest
-version available.
+The sample code is designed to work with Python 3.10.
 
 ## Virtual Environment
 
@@ -123,8 +121,8 @@ solutions towards working with the API.
 > address of your target LumenVox server by updating the
 > following settings in `lumenvox_api_user_connection_data.py`:
 >
-> * `LUMENVOX_API_SERVICE` address of your server
-> * `ENABLE_TLS` informs server that a certification should be validated
+> * `LUMENVOX_API_SERVICE_CONNECTION` address of your server
+> * `ENABLE_TLS` informs server that a certification should be validated (and CERT_FILE should be modified accordingly)
 > * `deployment_id` your assigned deployment ID in the server
 > * `operator_id` that you wish to use (identifies API user)
 
@@ -244,6 +242,44 @@ Note that some sample audio used for the transcription example
 is courtesy of the [Open Speech Repository](https://www.voiptroubleshooter.com/open_speech/index.html).
 Please visit their website for details and conditions of use.
 
+### Defining Audio Formats
+Audio format types need to be defined in the code in order to be used in interactions. 
+This can be done by referencing the `audio_formats.proto` file; the file contains an `AudioFormat` protocol buffer 
+message. Inside the `AudioFormat` message, an enum is defined for types of standard audio formats, 
+a `standard_audio_format` to be set to an enum value, and an optional `sample_rate_hertz` field required for certain 
+types. 
+
+If one were to define an audio format for ULAW 8kHz in the code, it would like the following:
+```python
+# audio_formats.proto messages
+import lumenvox.api.audio_formats_pb2 as audio_formats
+# Import optional_int32 helper definition.
+from helpers.common_helper import optional_int32
+
+# Audio format variable for ULAW 8kHz.
+AUDIO_FORMAT_ULAW_8KHZ = audio_formats.AudioFormat(
+    sample_rate_hertz=optional_int32(value=8000),
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW)
+```
+
+For the standard formats where the sample rate is not required to be specified (like WAV), it would look like this:
+```python
+# audio_formats.proto messages
+import lumenvox.api.audio_formats_pb2 as audio_formats
+
+# Audio format variable for ULAW 8kHz.
+AUDIO_FORMAT_WAV = audio_formats.AudioFormat(
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_WAV)
+```
+
+The `helpers/audio_helper.py` file already provides some formats defined in a similar fashion to what was described
+above. They can be imported in the sample scripts like this:
+```python
+# Import an AudioFormat variable defined in helpers/audio_helper.py
+from helpers.audio_helper import AUDIO_FORMAT_ULAW_8KHZ
+```
+
+
 ## Batch Mode ASR Decode
 
 See the `asr_batch_sample.py` script for an example of how to
@@ -354,3 +390,12 @@ perform a "normalize text" interaction using the Speech API.
 Normalize text interactions require a text transcript and normalization
 settings to run. 
 
+---
+### Troubleshooting
+
+**Note:** If a sample function fails to run with an error about pb2 file or anything
+similar:
+* Ensure that the protocol buffer files have been updated accordingly and their respective Python files are generated
+    with `make_stubs.py`.
+* Ensure that all the requirements have been installed in the virtual environment, and that the virtual environment 
+    is activated upon running the samples.

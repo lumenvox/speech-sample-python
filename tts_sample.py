@@ -3,16 +3,16 @@ Text-to-Speech (TTS) Sample
 This script will run through a session utilizing a TTS interaction.
 
 Refer to the integration diagrams found here:
-https://developer.lumenvox.com/4.6.0/tts-integration
+https://developer.lumenvox.com/tts-integration
 
 Further information on how to handle sessions, interactions and audio handling can be found here:
-https://developer.lumenvox.com/4.6.0/platform#section/Platform-Objects
+https://developer.lumenvox.com/platform#section/Platform-Objects
 
 Further information on the API calls / proto file can be found here:
-https://developer.lumenvox.com/4.6.0/tts-lumenvox.proto
+https://developer.lumenvox.com/tts-lumenvox.proto
 
 Further information on configuration settings can be found here:
-https://developer.lumenvox.com/4.6.0/tts-configuration
+https://developer.lumenvox.com/tts-configuration
 """
 import uuid
 

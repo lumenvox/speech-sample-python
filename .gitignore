@@ -1,16 +1,15 @@
-
-# IntelliJ project files
+Project files
 .idea
 *.iml
 out
 gen
-venv/
-__pycache__/
+/venv
 
-# Possible certificates
-*.crt
-*.pem
+# Protoc generated API files
+*_pb2.py
+*_pb2_grpc.py
 
-# generated files
-/lumenvox
+# Generated stub folders
 /google
+/lumenvox
+/created_data/

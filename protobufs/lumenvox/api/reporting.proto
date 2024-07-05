@@ -144,6 +144,12 @@ service ReportingAPIService {
   //
   rpc ImportAnalysisSet(stream ImportAnalysisSetRequest) 
       returns (ImportAnalysisSetResponse);
+  
+  //
+  // Run various diagnostic checks: postgres, mongodb, redis 
+  //
+  rpc DiagnosticsCheck(DiagnosticsCheckRequest) 
+      returns (DiagnosticsCheckResponse);
 }
 
 // ======== messages below  ===============================================
@@ -155,10 +161,13 @@ message AnalysisSetListRequest {
   // Number of records per page (optional). 
   // Accepted values 1-100, default 10
   uint32 page_size = 1;
+
   // Records offset for applied filter (optional), default 0
   uint32 starting_at = 2;
+
   // Analysis set list order (optional), default created_date
   repeated AnalysisSetListOrder list_order = 3;
+
   // Additional filtering options (optional, e.g. by type or language...)
   AnalysisSetListFilterOptions filter = 4;
 
@@ -166,26 +175,37 @@ message AnalysisSetListRequest {
   enum AnalysisSetListOrder {
     // Order by creation date ascending
     ANALYSIS_SET_LIST_ORDER_CREATED_DATE = 0;
-    // Oreder by creation date descending
+
+    // Order by creation date descending
     ANALYSIS_SET_LIST_ORDER_CREATED_DATE_DESC = 1;
+
     // Order by the number of sessions ascending
     ANALYSIS_SET_LIST_ORDER_NUM_SESSIONS = 2;
+
     // Order by the number of sessions descending
     ANALYSIS_SET_LIST_ORDER_NUM_SESSIONS_DESC = 3;
+
     // Order by the number of interactions ascending
     ANALYSIS_SET_LIST_ORDER_NUM_INTERACTIONS = 4;
+
     // Order by the number of interactions descending
     ANALYSIS_SET_LIST_ORDER_NUM_INTERACTIONS_DESC = 5;
+
     // Order by interaction status ascending
     ANALYSIS_SET_LIST_ORDER_STATUS = 6;
+
     // Order by interaction status descending
     ANALYSIS_SET_LIST_ORDER_STATUS_DESC = 7;
+
     // Order by interaction name ascending
     ANALYSIS_SET_LIST_ORDER_NAME = 8;
+
     // Order by interaction name descending
     ANALYSIS_SET_LIST_ORDER_NAME_DESC = 9;
+
     // Order by interaction type ascending
     ANALYSIS_SET_LIST_ORDER_TYPE = 10;
+
     // Order by interaction type descending
     ANALYSIS_SET_LIST_ORDER_TYPE_DESC = 11;
   }
@@ -197,10 +217,13 @@ message AnalysisSetListRequest {
 message AnalysisSetListFilterOptions {
   // Start timestamp for the interval
   google.protobuf.Timestamp created_date_from = 1;
+
   // End timestamp for the interval
   google.protobuf.Timestamp created_date_to = 2;
+
   // Interaction type filter
   InteractionType type = 3;
+
   // Description (name) filter
   string description = 4;
 }
@@ -211,6 +234,7 @@ message AnalysisSetListFilterOptions {
 message AnalysisSetListResponse {
   // The list of requested analysis sets
   repeated AnalysisSet analysis_set_list = 1;
+
   // The number of analysis sets in the response
   uint32 total_number_of_matched = 2;
 }
@@ -229,6 +253,7 @@ message AnalysisSetPreCreateRequest {
 message AnalysisSetPreCreateResponse {
   // Number of sessions
   uint32 sessions_extract_needed = 1;
+
   // Number of interactions
   uint32 interactions_extract_needed = 2;
 }
@@ -239,6 +264,7 @@ message AnalysisSetPreCreateResponse {
 message AnalysisSetCreateRequest {
   // Creation filter
   AnalysisSetFilterOptions filter_options = 1;
+
   // The name (description) of the new analysis set created
   string analysis_set_name = 2;
 }
@@ -287,12 +313,16 @@ message AnalysisSetGetResponse {
 message InteractionAnalysisListRequest {
   // Identifier of analysis set (required)
   string analysis_set_id = 1;
+
   // Page size, accepted values 1-100, default 10 (optional)
   uint32 page_size = 2;
+
   // Records offset for applied filter, default 0 (optional)
   uint32 starting_at = 3;
+
   // Set analysis set order, default created_date (optional)
   repeated InteractionAnalysisListOrder list_order = 4;
+
   // Additional filtering options (e.g. by type or language...) (optional)
   InteractionAnalysisFilterOptions filter = 5;
 
@@ -300,10 +330,13 @@ message InteractionAnalysisListRequest {
   enum InteractionAnalysisListOrder {
     // Order by interaction start date ascending
     INTERACTION_ANALYSIS_LIST_ORDER_START_TIME = 0;
+
     // Order by interaction start date descending
     INTERACTION_ANALYSIS_LIST_ORDER_START_TIME_DESC = 1;
+
     // Order by interaction end date ascending
     INTERACTION_ANALYSIS_LIST_ORDER_END_TIME = 2;
+
     // Order by interaction end date descending
     INTERACTION_ANALYSIS_LIST_ORDER_END_TIME_DESC = 3;
     // Can be extended depending on requirements
@@ -316,14 +349,19 @@ message InteractionAnalysisListRequest {
 message InteractionAnalysisFilterOptions {
   // Lumenvox session identifier
   string session_id = 1;
+
   // Start date time
   google.protobuf.Timestamp start_timestamp = 2;
+
   // End date time
   google.protobuf.Timestamp end_timestamp = 3;
+
   // Include selected grammars
   string grammar_hash = 4;
+
   // Include selected ssml
   string ssml_hash = 5;
+
   // Search text
   string search_text = 6;
 }
@@ -334,8 +372,10 @@ message InteractionAnalysisFilterOptions {
 message InteractionAnalysisListResponse {
   // List of Interactions
   repeated InteractionDetails interaction_list = 1;
+
   // Total number of entries in the list
   uint32 total_number_of_matched = 2;
+
   // Total number of transcribed entries in the list
   uint32 total_number_of_transcribed = 3;
 }
@@ -346,6 +386,7 @@ message InteractionAnalysisListResponse {
 message InteractionAnalysisGetRequest {
   // UUID of the interaction
   string interaction_id = 1;
+
   // UUID for the analysis set
   string analysis_set_id = 2;
 }
@@ -372,6 +413,7 @@ message InteractionAnalysisUpdateTranscriptionRequest {
 message InteractionAnalysisUpdateTranscriptionResponse {
   // Operation status
   google.rpc.Status status = 1;
+
   // Product interaction within a session
   InteractionDetails interaction = 2;
 }
@@ -380,25 +422,35 @@ message InteractionAnalysisUpdateTranscriptionResponse {
 // Enum with interaction analysis statuses
 enum InteractionAnalysisStatus {
   // No transcription
-  INTERACTION_ANALYSIS_STATUS_NO_TRANSCRIPT = 0; 
+  INTERACTION_ANALYSIS_STATUS_NO_TRANSCRIPT = 0;
+
   // Correct
   INTERACTION_ANALYSIS_STATUS_CORRECT = 1;
+
   // Incorect
   INTERACTION_ANALYSIS_STATUS_INCORRECT = 2;
+
   // Out of Grammar
   INTERACTION_ANALYSIS_STATUS_OOG = 3;
+
   // Out of Coverage
   INTERACTION_ANALYSIS_STATUS_OOC = 4;
+
   // SI Match
   INTERACTION_ANALYSIS_STATUS_SI_MATCH = 5;
+
   // Failure for load 
   INTERACTION_ANALYSIS_STATUS_LOAD_FAILURE = 6;
+
   // Failure for decode
   INTERACTION_ANALYSIS_STATUS_DECODE_FAILURE = 7;
+
   // No input
   INTERACTION_ANALYSIS_STATUS_NO_INPUT = 8;
+
   // No input - correct
   INTERACTION_ANALYSIS_STATUS_CORRECT_NO_INPUT = 9;
+
   // No input - incorrect
   INTERACTION_ANALYSIS_STATUS_INCORRECT_NO_INPUT = 10;
 }
@@ -409,42 +461,61 @@ enum InteractionAnalysisStatus {
 message InteractionDetails {
   // New interaction UUID
   string id = 1;
+
   // Analysis set uuid
   string analysis_set_id = 2;
+
   // Original session identifier
   string session_id = 3;
+
   // Original interaction identifier
   string interaction_id = 4;
+
   // Base or Original Interaction type: ASR, TTS
   InteractionType main_type = 5;
+
   // Analysis status
   InteractionAnalysisStatus status = 6;
+
   // Audio channel identifier
   uint32 channel_id = 7;
+
   // Audio format
   AudioFormat audio_format = 8;
+
   // Error
   string error = 9;
+
   // Processing start timestamp
   google.protobuf.Timestamp start_timestamp = 10;
+
   // Processing end timestamp
   google.protobuf.Timestamp end_timestamp = 11;
+
   // Transcribed text
   string transcript_text = 12;
+
   // Transcribed semantic
   string transcript_semantic = 13;
+
   // Original interaction result
   InteractionResultSet original_result = 14;
+
     // Tuned interaction result
   InteractionResultSet tuned_result = 15;
+
   //Analysis status text
   string status_text =  16;
+
   // Error text in html format
   string html_error = 17;
+
   // Converted Interaction type: CPA, TTS
   InteractionType type = 20;
+
   // Interaction SubType
   InteractionSubType sub_type = 21;
+
   //Notes
   string notes = 22;
 }
@@ -455,34 +526,54 @@ message InteractionDetails {
 message InteractionResultSet{
   // Interaction settings
   InteractionSettings settings = 1;
+
   // Returned text
   string text = 2;
+
   // Returned semantic
   string semantic = 3;
+
   // Confidence
   uint32 score = 4;
+
   // Grammars used
   repeated string grammar_hash = 5;
+
   // Ssmls used
   repeated string ssml_hash = 6;
+
   // Interaction result
   Result interaction_result = 7;
+
   // Decode time
   uint32 decode_time = 8;
+
   // Confidence Threshold
   float confidence_threshold = 9;
+
   // Interaction Request
-  string interaction_request = 10;  
+  string interaction_request = 10;
+
   // Final status of the interaction
   FinalResultStatus final_result_status = 11;
+
   // Interaction Events
   repeated LogEvent log_events = 12;
+
   // Optional phrase lists for transcription interaction
   repeated TranscriptionPhraseList phrases = 13;
+
   //Final result status text
   string final_result_status_text = 14;
+
   //Session settings
   SessionSettings session_settings = 15;
+
+  // Phrases used
+  repeated string phrases_hash = 16;
+
+  // Archive metadata
+  bytes archive_metadata = 17;
 }
 
 //
@@ -491,12 +582,16 @@ message InteractionResultSet{
 message InteractionAnalysisUpdateTranscription {
   // UUID for interaction
   string interaction_id = 1;
+
   // UUID of analysis set
   string analysis_set_id = 2;
+
   // New transcription value
   string transcript_text = 3;
+
   // New transcription semantic interpretation
   string transcript_si = 4;
+
   // Notes
   string notes = 5;
 }
@@ -507,26 +602,37 @@ message InteractionAnalysisUpdateTranscription {
 message AnalysisSet {
   // UUID for the current analysis set
   string analysis_set_id = 1;
+
   // Name or description for the analysis set
   string description =3;
+
   // Creation timestamp
   google.protobuf.Timestamp created_date = 4;
+
   // Interaction filter definition
   string filter_json = 5;
+
   // Number of sessions included in the analysis set
   uint32 num_sessions = 6;
+
   // Number of interactions included in the analysis set
   uint32 num_interactions = 7;
+
   // Current status for the analysis set creation as json
   string job_status_json = 8;
+
   // Short description of the filter used
   string filter_summary=9;
+
   // Current status for the analysis set
   AnalysisSetStatus analysis_set_status =10;
+
   // Current settings used
   string settings_json = 11;
+
   // Analysis set description as a json string
   string analysis_json = 12;
+
   // Analysis set properties
   AnalysisSetProperties properties = 13;
 
@@ -534,14 +640,19 @@ message AnalysisSet {
   enum AnalysisSetStatus{
     // Not yet initialized
     ANALYSIS_SET_STATUS_UNINITIALIZED = 0;
+
     // Create operation is in progress
     ANALYSIS_SET_STATUS_CREATING = 1;
-    // Created sucessfuly
+
+    // Created successfully
     ANALYSIS_SET_STATUS_READY = 2;
+
     // Tuning in progress
     ANALYSIS_SET_STATUS_WORKING = 3;
+
     // Deleted
     ANALYSIS_SET_STATUS_DELETED = 4;
+
     // Deletion in progress
     ANALYSIS_SET_STATUS_ERASING = 5;
   }
@@ -551,7 +662,6 @@ message AnalysisSet {
 // Stores the analysis set properties
 //
 message AnalysisSetProperties {
-  
   // Flag to combine Human Business and Human Residence for CPA results
   bool combine_business_and_residence = 1;
 }
@@ -560,39 +670,54 @@ message AnalysisSetProperties {
 // Defines a filter for analysis set creation
 //
 message AnalysisSetFilterOptions {
-
   // Start timestamp for the interval
   google.protobuf.Timestamp start_timestamp = 2;
+
   // End timestamp for the interval
   google.protobuf.Timestamp end_timestamp = 3;
+
   // Interaction type filter
   InteractionType interaction_type = 4;
+
   // Interaction SubType
   InteractionSubType sub_type = 5;
+
   // Interaction status filter
   FinalResultStatus final_result_status = 6;
+
   // Interaction language filter
   string language_string = 7;
+
   // Specific grammars filter
   string grammar_hash = 8;
+
   // Analysis set properties
   AnalysisSetProperties properties = 9;
+
+  // Flag for enhanced transcriptions
+  bool enhanced_transcription = 10;
 }
 
 // Data types for binary storage
 enum DataType {
   // Undefined
   DATA_TYPE_UNDEFINED = 0;
+
   // Audio 
   DATA_TYPE_AUDIO = 1;
+
   // Voice print
   DATA_TYPE_MODEL = 2;
+
   // Voice print feature
   DATA_TYPE_FEATURE = 3;
+
   // Audio hash
   DATA_TYPE_HASH = 4;
+
   // Ssml
   DATA_TYPE_SSML = 5;
+
   // Grammar
   DATA_TYPE_GRAMMAR = 6;
 }
@@ -603,10 +728,13 @@ enum DataType {
 message RetrieveStorageIdRequest {
   // Data type to be retrieved
   DataType type = 1;
+
   // Hash of the data
   string hash = 2;
+
   // Session identifier
   string session_id = 3;
+
   // Audio chanel
   int32 channel_id = 4;
 }
@@ -641,12 +769,16 @@ message RetrieveArchiveDataResponse {
 message ArchiveEntry {
   // Binary storage identifier
   string storage_id = 1;
+
   // Deployment identifier
   string deployment_id = 2;
+
   // Associated tag for the binary data
   string tag = 3;
+
   // Binary data
   bytes data = 4;
+
   // Type of the binary data
   DataType data_type = 5;
 }
@@ -689,7 +821,6 @@ message UsageReportResponse {
 }
 
 //ComponentLicenseUsage
-
 //
 // Describes component for license usage
 //
@@ -700,8 +831,6 @@ message ComponentLicenseUsage {
   // milliseconds used for this component
   uint32 usage_ms = 2;
 }
-
-
 
 // UsageSnapshotRequest
 //
@@ -733,10 +862,13 @@ message UsageSnapshotResponse {
 message SnapshotData {
   // Deployment ID
   string deployment_id = 1;
+
   // Snapshot UUID (primary key for snapshot database table)
   string snapshot_uuid = 2;
+
   // Snapshot created (unix timestamp)
   int64 created_date = 3;
+
   // Usage report snapshot generated at created_date
   // Array of usage report information, one element per component
   repeated ComponentLicenseUsage component_license_usage = 4;
@@ -750,6 +882,7 @@ message SnapshotData {
 message LicenseStatusReportResponsePushRequest{
   // unique license status id
   string license_status_id = 1;
+
   // license status response retrieved from lumenvox cloud license server
   string license_status_report_response_json = 2;
 }
@@ -796,32 +929,63 @@ message ExportAnalysisSetRequest{
 // Describes an Analysis Set export response
 //
 message ExportAnalysisSetResponse{
-  // The export statsus.
+  // The export status.
   google.rpc.Status status = 1;
+
   // UUID of the analysis set selected for export
   string analysis_set_id = 2;
+
   // Description of the exported analysis set
   string analysis_set_description = 3;
+
   // archived analysis set data
   bytes archived_data = 4;
-  // Error description in case of failures
-  string status_message = 5;
 }
 
+//
+//Describes an Analysis Set import request
+//
 message ImportAnalysisSetRequest{
-  // UUID of the analysis set selected for export
-  string analysis_set_id = 1;
-  // Description of the imported analysis set
-  string analysis_set_description = 2;
+  //Description for the imported analysis set
+  string analysis_set_description = 1;
+
   // archived analysis set data
-  bytes archived_data = 3;
+  bytes archived_data = 2;
 }
 
+//
+//Describes an Analysis Set import response
+//
 message ImportAnalysisSetResponse{
-  // The import statsus.
+  // The import status.
   google.rpc.Status status = 1;
+
   // UUID of the imported analysis set
   string analysis_set_id = 2;
-  // Error description in case of failures
-  string status_message = 3;
+}
+
+//
+// Define various diagnostics types
+// 
+enum DiagnosticsType {
+  Undefined = 0;
+  Postgres = 1;
+  MongoDb = 3;
+  Redis = 4;
+}
+
+//
+// Describes the diagnostic request message
+//
+message DiagnosticsCheckRequest {
+  //Diagnostic type to be executed
+  DiagnosticsType type = 1;
+}
+
+//
+// Describes the diagnostic response message
+//
+message DiagnosticsCheckResponse {
+  //Error message in case of errors or empty sting if the diagnostic check was successful
+  string errorMessage = 1;
 }

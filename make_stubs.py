@@ -9,6 +9,7 @@ def import_proto_files():
     grpc_protos = [
         'lumenvox/api/reporting.proto',
         'lumenvox/api/lumenvox.proto',
+        'lumenvox/api/health.proto',
     ]  # Add more proto files to this list as needed.
 
     for proto_input in grpc_protos:
@@ -28,6 +29,7 @@ def import_proto_files():
                        'lumenvox/api/results.proto',
                        'lumenvox/api/session.proto',
                        'lumenvox/api/settings.proto',
+                       'lumenvox/api/health.proto',
                        ]  # Add more proto files to this list as needed
 
     for proto_input in lumenvox_protos:

@@ -100,6 +100,12 @@ message TranscriptionResult {
 
   // If enhanced transcription with grammars is used results are added here.
   repeated AsrGrammarResult grammar_results = 3;
+
+  // If SRT generation is enabled, the SRT file is added here.
+  bytes srt_file = 4;
+
+  // If VTT generation is enabled, the VTT file is added here.
+  bytes vtt_file = 5;
 }
 
 // Result returned from an AMD interaction.

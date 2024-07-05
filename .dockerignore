@@ -1,16 +1,16 @@
-
-# IntelliJ project files
-.idea
-*.iml
-out
-gen
-
-# unwanted files
-/venv
-/lumenvox
-/google
-.git
-.gitignore
+/docs/
+/docker/
+azure-pipelines.yml
+.git/
+.gitmodules
 .dockerignore
-Dockerfile
-*.crt
+.idea/
+__pycache__
+.venv/
+.gitignore
+nginx-test_data.*
+venv/
+protobufs/*.md
+protobufs/*.sh
+protobufs/*.yml
+protobufs/protoc-gen-swagger

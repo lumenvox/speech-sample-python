@@ -1,6 +1,6 @@
 """
-Normalized Transcription Sample
-This script will run through a session utilizing a Transcription interaction.
+Transcription with SRT and VTT Generation Sample.
+This script will demonstrate the use of NormalizationSettings to enable SRT and VTT generation.
 
 As this script utilizes a Transcription interaction, it pulls functionality and the interaction data container class
 from the transcription_samply.py script. Refer to that script for more information on Transcription interactions.
@@ -19,27 +19,35 @@ https://developer.lumenvox.com/asr-configuration
 """
 import uuid
 
-# Import protocol buffer messages from settings
+# Import protocol buffer messages from settings.
 import lumenvox.api.settings_pb2 as settings_msg
 
-# LumenVox API handling code
+# LumenVox API handling code.
 import lumenvox_api_handler
 
 # Our custom helper functions for settings.
 from helpers import settings_helper
 
-# Import code needed to interact with the API
+# Import code needed to interact with the API.
 from lumenvox_api_handler import LumenVoxApiClient
 
-# Import AudioHandling code to assist with AudioPush sequences
+# Import AudioHandling code to assist with AudioPush sequences.
 from helpers.audio_helper import AudioHandler
-# Import the AudioFormat used in this file.
-from helpers.audio_helper import AUDIO_FORMAT_ULAW_8KHZ
+
+# audio_formats.proto messages
+import lumenvox.api.audio_formats_pb2 as audio_formats
+# Import optional_int32 helper definition.
+from helpers.common_helper import optional_int32
 
 # This script will utilize the TranscriptionInteractionData class from the transcription_sample.py
 from transcription_sample import TranscriptionInteractionData
 # Also import the function since the process carrying out the interaction will be the same.
 from transcription_sample import transcription
+
+# Define MP3 audio format variable (see the README and audio_formats.proto for more information).
+AUDIO_FORMAT_MP3_8KHZ = audio_formats.AudioFormat(
+    sample_rate_hertz=optional_int32(value=8000),
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_MP3)
 
 
 def transcription_interaction_data_setup(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiClient) \
@@ -63,10 +71,9 @@ def transcription_interaction_data_setup(lumenvox_api_client: lumenvox_api_handl
     interaction_data.audio_handler = (
         AudioHandler(
             lumenvox_api_client=lumenvox_api_client,
-            audio_file_path=
-            './sample_data/Audio/en/transcription/meeting.raw',
-            audio_format=AUDIO_FORMAT_ULAW_8KHZ,
-            audio_push_chunk_size_bytes=4000))
+            audio_file_path='./sample_data/Audio/en/1234.mp3',
+            audio_format=AUDIO_FORMAT_MP3_8KHZ,
+            audio_push_chunk_size_bytes=160))
 
     # For non-batch operations, load audio data into a buffer.
     interaction_data.audio_handler.init_audio_buffer()
@@ -77,10 +84,10 @@ def transcription_interaction_data_setup(lumenvox_api_client: lumenvox_api_handl
 
     # Define normalization settings using the helper function that provides a NormalizationSettings message
     # (see settings.proto).
-    # Setting at least one of the settings to True will provide at least some form of normalization on the result.
+    # The settings are constructed to allow for both SRT and VTT generation, which will be viewable in the final result.
     normalization_settings = (
-        settings_helper.define_normalization_settings(enable_inverse_text=True, enable_redaction=True,
-                                                      enable_punctuation_capitalization=True))
+        settings_helper.define_normalization_settings(
+            enable_srt_generation=True, enable_vtt_generation=True))
 
     # Define variables to use for audio consume settings. This will affect the processing type (Batch/Streaming) and
     # determine when we push audio.

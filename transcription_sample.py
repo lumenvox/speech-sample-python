@@ -3,16 +3,16 @@ Transcription Sample
 This script will run through a session utilizing a streaming Transcription interaction.
 
 Refer to the integration diagrams found here:
-https://developer.lumenvox.com/4.6.0/asr-integration#section/INTEGRATION-WORKFLOWS/Transcription
+https://developer.lumenvox.com/asr-integration#section/INTEGRATION-WORKFLOWS/Transcription
 
 Further information on how to handle sessions, interactions and audio handling can be found here:
-https://developer.lumenvox.com/4.6.0/platform#section/Platform-Objects
+https://developer.lumenvox.com/platform#section/Platform-Objects
 
 Further information on the API calls / proto file can be found here:
-https://developer.lumenvox.com/4.6.0/asr-lumenvox.proto
+https://developer.lumenvox.com/asr-lumenvox.proto
 
 Further information on configuration settings can be found here:
-https://developer.lumenvox.com/4.6.0/asr-configuration
+https://developer.lumenvox.com/asr-configuration
 """
 import asyncio
 import uuid
@@ -93,6 +93,11 @@ async def transcription(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCli
     # For interactions that utilize user audio, it's required that the user provide the audio format.
     await transcription_interaction_data.audio_handler.set_inbound_audio_format()
 
+    # Push all audio before the interaction creation if using Batch/STREAM_START_LOCATION_STREAM_BEGIN.
+    if transcription_interaction_data.audio_consume_settings.stream_start_location == \
+            settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_STREAM_BEGIN:
+        await transcription_interaction_data.audio_handler.push_all_audio()
+
     ####### InteractionCreateTranscription #######
     # Create a Transcription interaction using the data from the transcription_interaction_data object of the
     # TranscriptionInteractionData class above.
@@ -135,7 +140,10 @@ async def transcription(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCli
 
     ####### Get Result #######
     # If not using VAD, then InteractionFinalizeProcessing needs to be called.
-    if not transcription_interaction_data.vad_settings.use_vad.value:
+    # We need to check if Batch processing is not being used before calling InteractionFinalizeProcessing.
+    if (not transcription_interaction_data.vad_settings.use_vad.value
+            and transcription_interaction_data.audio_consume_settings.audio_consume_mode
+            != settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_BATCH):
         await audio_push_finish_event.wait()
         await lumenvox_api_client.interaction_finalize_processing(
             session_stream=session_stream, interaction_id=interaction_id, correlation_id=correlation_id)

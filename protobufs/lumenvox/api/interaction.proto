@@ -64,7 +64,6 @@ message InteractionRequestMessage {
 }
 
 message InteractionCreateAmdRequest {
-
   // Parameters for this interaction
   AmdSettings amd_settings = 1;
 
@@ -181,7 +180,7 @@ message InteractionCreateTranscriptionRequest {
   // performed on output of this interaction.
   NormalizationSettings normalization_settings = 7;
 
-  //Optional settings specifiying boost options for phrases
+  //Optional settings specifying boost options for phrases
   PhraseListSettings phrase_list_settings = 8;
 
   // Optional settings related to all interactions
@@ -224,6 +223,12 @@ message InteractionCreateTtsRequest {
 
     // Optional settings for voice synthesis.
     TtsInlineSynthesisSettings tts_inline_synthesis_settings = 2;
+
+    // Enables or disables the verification of a peer's certificate using a
+    // local certificate authority file upon HTTPS requests. Set to
+    // false (disabled) to skip verification for trusted sites.
+    // Default: true
+    OptionalBool ssl_verify_peer = 3;
   }
 
   message SsmlUrlRequest {

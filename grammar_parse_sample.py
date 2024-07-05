@@ -3,13 +3,13 @@ Grammar Parse Sample
 This script will run through a session utilizing a GrammarParse interaction.
 
 Information on how to handle sessions & interaction can be found here:
-https://developer.lumenvox.com/4.6.0/platform#section/Platform-Objects
+https://developer.lumenvox.com/platform#section/Platform-Objects
 
 Further information on the API calls / proto file can be found here:
-https://developer.lumenvox.com/4.6.0/cpa-lumenvox.proto
+https://developer.lumenvox.com/cpa-lumenvox.proto
 
 Further information on configuration settings can be found here:
-https://developer.lumenvox.com/4.6.0/cpa-configuration
+https://developer.lumenvox.com/cpa-configuration
 """
 import uuid
 

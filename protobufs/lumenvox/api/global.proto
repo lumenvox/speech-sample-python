@@ -44,34 +44,34 @@ message GlobalRequest {
     SessionSettings session_settings = 7;
 
     // Default interaction settings
-    InteractionSettings interaction_settings = 8;
+    InteractionSettings interaction_settings = 8 [deprecated = true];
 
     // Default grammar settings
-    GrammarSettings grammar_settings = 9;
+    GrammarSettings grammar_settings = 9 [deprecated = true];
 
     // Default recognition settings
-    RecognitionSettings recognition_settings = 10;
+    RecognitionSettings recognition_settings = 10 [deprecated = true];
 
     // Default normalization settings
-    NormalizationSettings normalization_settings = 11;
+    NormalizationSettings normalization_settings = 11 [deprecated = true];
 
     // Default VAD settings
-    VadSettings vad_settings = 12;
+    VadSettings vad_settings = 12 [deprecated = true];
 
     // Default CPA settings
-    CpaSettings cpa_settings = 13;
+    CpaSettings cpa_settings = 13 [deprecated = true];
 
     // Default tone detection settings
-    AmdSettings amd_settings = 14;
+    AmdSettings amd_settings = 14 [deprecated = true];
 
     // Default audio consume settings
-    AudioConsumeSettings audio_consume_settings = 15;
+    AudioConsumeSettings audio_consume_settings = 15 [deprecated = true];
 
     // Default logging settings
     LoggingSettings logging_settings = 16;
 
     // Optional settings specifying boost options for phrases
-    PhraseListSettings phrase_list_settings = 17;
+    PhraseListSettings phrase_list_settings = 17 [deprecated = true];
 
     // Will reset all of the settings to default
     ResetSettings reset_settings = 18;
@@ -90,7 +90,7 @@ message GlobalResponse {
     GlobalSettings global_settings = 3;
 
     // Response to a global load grammar request
-    GlobalLoadGrammarResponse global_grammar = 4;
+    GlobalLoadGrammarResponse global_grammar = 4 [deprecated = true];
 
     // Response to a global load phrase list request
     GlobalLoadPhraseListResponse global_phrase_list = 5;
@@ -174,34 +174,34 @@ message GlobalGetSettingsRequest {
     GET_SETTINGS_TYPE_SESSION = 1;
 
     // InteractionSettings type
-    GET_SETTINGS_TYPE_INTERACTION = 2;
+    GET_SETTINGS_TYPE_INTERACTION = 2 [deprecated = true];
 
     // GrammarSettings type
-    GET_SETTINGS_TYPE_GRAMMAR = 3;
+    GET_SETTINGS_TYPE_GRAMMAR = 3 [deprecated = true];
 
     // RecognitionSettings type
-    GET_SETTINGS_TYPE_RECOGNITION= 4;
+    GET_SETTINGS_TYPE_RECOGNITION= 4 [deprecated = true];
 
     // NormalizationSettings type
-    GET_SETTINGS_TYPE_NORMALIZATION = 5;
+    GET_SETTINGS_TYPE_NORMALIZATION = 5 [deprecated = true];
 
     // VadSettings type
-    GET_SETTINGS_TYPE_VAD = 6;
+    GET_SETTINGS_TYPE_VAD = 6 [deprecated = true];
 
     // CpaSettings type
-    GET_SETTINGS_TYPE_CPA = 7;
+    GET_SETTINGS_TYPE_CPA = 7 [deprecated = true];
 
     // AmdSettings type
-    GET_SETTINGS_TYPE_AMD = 8;
+    GET_SETTINGS_TYPE_AMD = 8 [deprecated = true];
 
     // AudioConsumeSettings type
-    GET_SETTINGS_TYPE_AUDIO_CONSUME = 9;
+    GET_SETTINGS_TYPE_AUDIO_CONSUME = 9 [deprecated = true];
 
     // LoggingSettings type
     GET_SETTINGS_TYPE_LOGGING_SETTINGS = 10;
 
     // PhraseList type
-    GET_SETTINGS_TYPE_PHRASE_LIST = 11;
+    GET_SETTINGS_TYPE_PHRASE_LIST = 11 [deprecated = true];
   }
 
   // Used to specify the type of settings to request
@@ -215,32 +215,32 @@ message GlobalSettings {
   SessionSettings session_settings = 1;
 
   // Default interaction settings
-  InteractionSettings interaction_settings = 2;
+  InteractionSettings interaction_settings = 2 [deprecated = true];
 
   // Default grammar settings
-  GrammarSettings grammar_settings = 3;
+  GrammarSettings grammar_settings = 3 [deprecated = true];
 
   // Default recognition settings
-  RecognitionSettings recognition_settings = 4;
+  RecognitionSettings recognition_settings = 4 [deprecated = true];
 
   // Default normalization settings
-  NormalizationSettings normalization_settings = 5;
+  NormalizationSettings normalization_settings = 5 [deprecated = true];
 
   // Default VAD settings
-  VadSettings vad_settings = 6;
+  VadSettings vad_settings = 6 [deprecated = true];
 
   // Default CPA settings
-  CpaSettings cpa_settings = 7;
+  CpaSettings cpa_settings = 7 [deprecated = true];
 
   // Default tone detection settings
-  AmdSettings amd_settings = 8;
+  AmdSettings amd_settings = 8 [deprecated = true];
 
   // Default audio consume settings
-  AudioConsumeSettings audio_consume_settings = 9;
+  AudioConsumeSettings audio_consume_settings = 9 [deprecated = true];
 
   // Default logging settings
   LoggingSettings logging_settings = 10;
 
   //Optional settings specifying boost options for phrases
-  PhraseListSettings phrase_list_settings = 11;
+  PhraseListSettings phrase_list_settings = 11 [deprecated = true];
 }

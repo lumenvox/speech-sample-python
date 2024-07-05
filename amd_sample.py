@@ -2,16 +2,16 @@
 AMD Sample
 This script will run through a session utilizing an AMD interaction.
 Refer to the integration diagrams found here:
-https://developer.lumenvox.com/4.6.0/cpa-integration#section/INTEGRATION-WORKFLOWS/AMD
+https://developer.lumenvox.com/cpa-integration#section/INTEGRATION-WORKFLOWS/AMD
 
 Further information on how to handle sessions, interactions and audio handling can be found here:
-https://developer.lumenvox.com/4.6.0/platform#section/Platform-Objects
+https://developer.lumenvox.com/platform#section/Platform-Objects
 
 Further information on the API calls / proto file can be found here:
-https://developer.lumenvox.com/4.6.0/cpa-lumenvox.proto
+https://developer.lumenvox.com/cpa-lumenvox.proto
 
 Further information on configuration settings can be found here:
-https://developer.lumenvox.com/4.6.0/cpa-configuration
+https://developer.lumenvox.com/cpa-configuration
 """
 import asyncio  # This library is used to perform tasking and sleeping functions for the audio streaming approach.
 import uuid  # Provide UUID strings for the correlation ID.

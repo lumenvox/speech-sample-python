@@ -8,10 +8,10 @@ Example command:
 py normalize_text_from_tsv.py input.tsv output.tsv
 
 Further information on text normalization can be located here:
-https://developer.lumenvox.com/4.6.0/asr-functional-overview#section/Transcription-ASR-Post-Processing
+https://developer.lumenvox.com/asr-functional-overview#section/Transcription-ASR-Post-Processing
 
 Further information on how to handle sessions & interactions can be found here:
-https://developer.lumenvox.com/4.6.0/platform#section/Platform-Objects
+https://developer.lumenvox.com/platform#section/Platform-Objects
 """
 import sys
 

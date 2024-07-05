@@ -6,16 +6,16 @@ This script utilizes code written in the asr_streaming_sample.py script. Refer t
 for more detail on running ASR interactions.
 
 Refer to the integration diagrams found here:
-https://developer.lumenvox.com/4.6.0/asr-integration#section/INTEGRATION-WORKFLOWS/ASR
+https://developer.lumenvox.com/asr-integration#section/INTEGRATION-WORKFLOWS/ASR
 
 Further information on how to handle sessions, interactions and audio handling can be found here:
-https://developer.lumenvox.com/4.6.0/platform#section/Platform-Objects
+https://developer.lumenvox.com/platform#section/Platform-Objects
 
 Further information on the API calls / proto file can be found here:
-https://developer.lumenvox.com/4.6.0/asr-lumenvox.proto
+https://developer.lumenvox.com/asr-lumenvox.proto
 
 Further information on configuration settings can be found here:
-https://developer.lumenvox.com/4.6.0/asr-configuration
+https://developer.lumenvox.com/asr-configuration
 """
 import asyncio  # This library is used to perform tasking and sleeping functions for the audio streaming approach.
 import uuid  # Provide UUID strings for the correlation ID.

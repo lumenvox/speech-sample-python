@@ -40,6 +40,18 @@ message AudioFormat {
     // FLAC formatted audio
     STANDARD_AUDIO_FORMAT_FLAC = 5;
 
+    // MP3 formatted audio
+    STANDARD_AUDIO_FORMAT_MP3 = 6;
+
+    // OPUS formatted audio
+    STANDARD_AUDIO_FORMAT_OPUS = 7;
+
+    // M4A formatted audio
+    STANDARD_AUDIO_FORMAT_M4A = 8;
+
+    // Audio packed into MP4 container
+    STANDARD_AUDIO_FORMAT_MP4 = 9;
+
     // Explicitly indicate that no audio resource should be allocated
     STANDARD_AUDIO_FORMAT_NO_AUDIO_RESOURCE = 100;
   }

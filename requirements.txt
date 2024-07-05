@@ -1,7 +1,7 @@
 # GRPC Python setup requirements
 grpcio==1.47.0
 grpcio-tools==1.47.0
-protobuf>=3.12.0
+protobuf==3.20.3
 uuid==1.30
 wheel>=0.29
 setuptools==65.5.1

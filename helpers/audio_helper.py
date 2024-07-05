@@ -26,39 +26,51 @@ SAMPLE_RATE_22HZ = 22050
 
 AUDIO_FORMAT_ULAW_8KHZ = audio_formats.AudioFormat(
     sample_rate_hertz=optional_int32(value=SAMPLE_RATE_8HZ),
-    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW
-)
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW)
 
 AUDIO_FORMAT_ULAW_16KHZ = audio_formats.AudioFormat(
     sample_rate_hertz=optional_int32(value=SAMPLE_RATE_16HZ),
-    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW,
-)
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ULAW)
 
 AUDIO_FORMAT_ALAW_8KHZ = audio_formats.AudioFormat(
     sample_rate_hertz=optional_int32(value=SAMPLE_RATE_8HZ),
-    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ALAW,
-)
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_ALAW)
 
 AUDIO_FORMAT_PCM_8KHZ = audio_formats.AudioFormat(
     sample_rate_hertz=optional_int32(value=SAMPLE_RATE_8HZ),
-    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_LINEAR16,
-)
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_LINEAR16)
 
 AUDIO_FORMAT_PCM_16KHZ = audio_formats.AudioFormat(
     sample_rate_hertz=optional_int32(value=SAMPLE_RATE_16HZ),
-    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_LINEAR16,
-)
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_LINEAR16)
 
 AUDIO_FORMAT_PCM_22KHZ = audio_formats.AudioFormat(
     sample_rate_hertz=optional_int32(value=SAMPLE_RATE_22HZ),
-    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_LINEAR16,
-)
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_LINEAR16)
 
 AUDIO_FORMAT_WAV_8KHZ = audio_formats.AudioFormat(
     sample_rate_hertz=optional_int32(value=8000),
-    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_WAV,
-)
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_WAV)
 
+AUDIO_FORMAT_MP3_8KHZ = audio_formats.AudioFormat(
+    sample_rate_hertz=optional_int32(value=8000),
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_MP3)
+
+AUDIO_FORMAT_MP4_8KHZ = audio_formats.AudioFormat(
+    sample_rate_hertz=optional_int32(value=8000),
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_MP4)
+
+AUDIO_FORMAT_FLAC_8KHZ = audio_formats.AudioFormat(
+    sample_rate_hertz=optional_int32(value=8000),
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_FLAC)
+
+AUDIO_FORMAT_OPUS_8KHZ = audio_formats.AudioFormat(
+    sample_rate_hertz=optional_int32(value=8000),
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_OPUS)
+
+AUDIO_FORMAT_M4A_8KHZ = audio_formats.AudioFormat(
+    sample_rate_hertz=optional_int32(value=8000),
+    standard_audio_format=audio_formats.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_M4A)
 
 class AudioBuffer:
     """

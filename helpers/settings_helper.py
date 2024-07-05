@@ -75,10 +75,13 @@ def define_recognition_settings(max_alternatives: int = None, trim_silence_value
 
 
 def define_normalization_settings(enable_inverse_text: bool = None, enable_punctuation_capitalization: bool = None,
-                                  enable_redaction: bool = None, request_timeout_ms: int = None) \
+                                  enable_redaction: bool = None, request_timeout_ms: int = None,
+                                  enable_srt_generation: bool = None, enable_vtt_generation: bool = None) \
         -> settings_msg.NormalizationSettings:
     """
     Constructs a NormalizationSettings message. See settings.proto for more information.
+    :param enable_vtt_generation: Set to true to enable generation of VTT file (WebVTT file format).
+    :param enable_srt_generation: Set to true to enable generation of SRT file (SubRip file format).
     :param request_timeout_ms: Number of milliseconds text normalization should await results before timing out.
     :param enable_inverse_text: Set to true to enable inverse text normalization.
     :param enable_punctuation_capitalization: Set to true to enable punctuation and capitalization normalization.
@@ -90,7 +93,9 @@ def define_normalization_settings(enable_inverse_text: bool = None, enable_punct
         enable_punctuation_capitalization=optional_bool(enable_punctuation_capitalization)
         if enable_punctuation_capitalization is not None else None,
         enable_redaction=optional_bool(enable_redaction) if enable_redaction is not None else None,
-        request_timeout_ms=optional_int32(request_timeout_ms) if request_timeout_ms is not None else None)
+        request_timeout_ms=optional_int32(request_timeout_ms) if request_timeout_ms is not None else None,
+        enable_srt_generation=optional_bool(enable_srt_generation) if enable_srt_generation is not None else None,
+        enable_vtt_generation=optional_bool(enable_vtt_generation) if enable_vtt_generation is not None else None)
 
     return normalization_settings
 

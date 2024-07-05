@@ -7,16 +7,16 @@ As this script utilizes an ASR batch interaction, it pulls functionality and the
 the asr_batch_sample.py script. Refer to that script for more information on ASR batch interactions.
 
 Refer to the integration diagrams found here:
-https://developer.lumenvox.com/4.6.0/asr-integration#section/INTEGRATION-WORKFLOWS/ASR
+https://developer.lumenvox.com/asr-integration#section/INTEGRATION-WORKFLOWS/ASR
 
 Further information on how to handle sessions, interactions and audio handling can be found here:
-https://developer.lumenvox.com/4.6.0/platform#section/Platform-Objects
+https://developer.lumenvox.com/platform#section/Platform-Objects
 
 Further information on the API calls / proto file can be found here:
-https://developer.lumenvox.com/4.6.0/asr-lumenvox.proto
+https://developer.lumenvox.com/asr-lumenvox.proto
 
 Further information on configuration settings can be found here:
-https://developer.lumenvox.com/4.6.0/asr-configuration
+https://developer.lumenvox.com/asr-configuration
 """
 import uuid
 

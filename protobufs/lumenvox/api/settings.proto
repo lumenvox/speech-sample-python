@@ -55,8 +55,8 @@ message SessionSettings {
   repeated OptionalString logging_tag = 7;
 }
 
+//Describes the interaction specific settings
 message InteractionSettings {
-
   // Optional settings related to all interactions
   GeneralInteractionSettings general_interaction_settings = 1;
 
@@ -194,6 +194,14 @@ message NormalizationSettings {
   // Possible values: 0 - 1000000
   // Default: 5000
   OptionalInt32 request_timeout_ms = 4;
+
+  // Set to true to enable generation of SRT file (SubRip file format)
+  // Default: false
+  OptionalBool enable_srt_generation = 5;
+
+  // Set to true to enable generation of VTT file (WebVTT file format)
+  // Default: false
+  OptionalBool enable_vtt_generation = 6;
 }
 
 // Settings related to Voice Activity Detection (VAD)
@@ -500,9 +508,7 @@ message TtsInlineSynthesisSettings {
 }
 
 message LoggingSettings {
-
   enum LoggingVerbosity {
-  
     // Logging verbosity is not specified
     LOGGING_VERBOSITY_UNSPECIFIED = 0;
 

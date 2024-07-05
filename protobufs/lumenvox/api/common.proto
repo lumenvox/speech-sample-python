@@ -114,7 +114,7 @@ message Grammar {
 
     // Reference to a previously defined "global" grammar
     // Note: label must consist of letters, digits, hyphens, underscores only
-    string global_grammar_label = 3;
+    string global_grammar_label = 3 [deprecated = true];
 
     // Reference to a previously defined "session" grammar
     // Note: label must consist of letters, digits, hyphens, underscores only

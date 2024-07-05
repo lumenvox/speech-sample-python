@@ -6,16 +6,16 @@ As this script utilizes a Transcription interaction, it pulls functionality and 
 from the transcription_samply.py script. Refer to that script for more information on Transcription interactions.
 
 Refer to the integration diagrams found here:
-https://developer.lumenvox.com/4.6.0/asr-integration#section/INTEGRATION-WORKFLOWS/Transcription
+https://developer.lumenvox.com/asr-integration#section/INTEGRATION-WORKFLOWS/Transcription
 
 Further information on how to handle sessions, interactions and audio handling can be found here:
-https://developer.lumenvox.com/4.6.0/platform#section/Platform-Objects
+https://developer.lumenvox.com/platform#section/Platform-Objects
 
 Further information on the API calls / proto file can be found here:
-https://developer.lumenvox.com/4.6.0/asr-lumenvox.proto
+https://developer.lumenvox.com/asr-lumenvox.proto
 
 Further information on configuration settings can be found here:
-https://developer.lumenvox.com/4.6.0/asr-configuration
+https://developer.lumenvox.com/asr-configuration
 """
 # Import protocol buffer messages from settings.
 import lumenvox.api.settings_pb2 as settings_msg
