@@ -19,6 +19,8 @@ import uuid
 
 # Import protocol buffer messages from settings.
 import lumenvox.api.settings_pb2 as settings_msg
+# Import protocol buffer messages for audio formats.
+import lumenvox.api.audio_formats_pb2 as audio_formats_msg
 
 # LumenVox API handling code
 import lumenvox_api_handler
@@ -59,6 +61,10 @@ class TranscriptionInteractionData:
     language_model_name: str = None
     acoustic_model_name: str = None
 
+    continuous_utterance_transcription: bool = False
+
+    print_partial_results: bool = False
+
     correlation_id: str = None
 
 
@@ -97,6 +103,12 @@ async def transcription(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCli
     if transcription_interaction_data.audio_consume_settings.stream_start_location == \
             settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_STREAM_BEGIN:
         await transcription_interaction_data.audio_handler.push_all_audio()
+    else:
+        if transcription_interaction_data.audio_handler.audio_format.standard_audio_format == \
+                audio_formats_msg.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_WAV:
+            # If using a .WAV format audio, the first part of the audio containing the header needs to be sent before
+            # InteractionCreate.
+            await transcription_interaction_data.audio_handler.push_audio_chunk()
 
     ####### InteractionCreateTranscription #######
     # Create a Transcription interaction using the data from the transcription_interaction_data object of the
@@ -113,6 +125,7 @@ async def transcription(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCli
         enable_postprocessing=transcription_interaction_data.enable_postprocessing,
         language_model_name=transcription_interaction_data.language_model_name,
         acoustic_model_name=transcription_interaction_data.acoustic_model_name,
+        continuous_utterance_transcription=transcription_interaction_data.continuous_utterance_transcription,
         correlation_id=correlation_id)
 
     # Wait for response containing interaction ID to be returned from the API.
@@ -156,6 +169,15 @@ async def transcription(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCli
             await lumenvox_api_client.get_streaming_response(
                 session_stream=session_stream, audio_push_finish_event=audio_push_finish_event)
 
+    # Collect partial results here in cases like Continuous Transcription where they are returned.
+    partial_results_received = []
+    if transcription_interaction_data.continuous_utterance_transcription:
+        while True:
+            pr = await lumenvox_api_client.get_session_partial_result(session_stream=session_stream, wait=10)
+            if not pr:
+                break
+            partial_results_received.append(pr)
+
     ####### InteractionClose #######
     # Once we receive the result and there's nothing left to do, we close the interaction.
     await lumenvox_api_client.interaction_close(session_stream=session_stream, interaction_id=interaction_id,
@@ -174,7 +196,10 @@ async def transcription(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCli
     # A successful Transcription interaction will provide a status of FINAL_RESULT_STATUS_TRANSCRIPTION_MATCH.
     print("Transcription final result:\n", final_result)
 
-    return final_result
+    if transcription_interaction_data.print_partial_results:
+        print("Transcription partial results:\n", partial_results_received)
+
+    return final_result, partial_results_received
 
 
 def transcription_interaction_data_setup(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiClient) \

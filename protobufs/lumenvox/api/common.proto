@@ -218,7 +218,7 @@ enum InteractionType {
 }
 
 //
-// List of all interaction sub-types for ASR Interations
+// List of all interaction sub-types for ASR Interactions
 enum InteractionSubType {
   // This is not valid type. Indicating empty gRPC message.
   INTERACTION_SUB_TYPE_UNSPECIFIED = 0;
@@ -229,14 +229,17 @@ enum InteractionSubType {
   // Answering machine detection interaction type with grammars
   INTERACTION_SUB_TYPE_GRAMMAR_BASED_AMD = 2;
 
-  // Deprecated - ASR transcription interaction with multiple grammars
+  // ASR transcription interaction with multiple grammars
   INTERACTION_SUB_TYPE_ENHANCED_TRANSCRIPTION = 3;
 
   // Deprecated - ASR continuous transcription 
-  INTERACTION_SUB_TYPE_CONTINUOUS_TRANSCRIPTION = 4;
+  INTERACTION_SUB_TYPE_CONTINUOUS_TRANSCRIPTION = 4 [deprecated = true];
 
   // Deprecated - Transcription result with normalized text
-  INTERACTION_SUB_TYPE_TRANSCRIPTION_WITH_NORMALIZATION = 5;
+  // Normalization can be enabled for different interaction types/subtypes in parallel,
+  // e.g. GRAMMAR_BASED_TRANSCRIPTION can have normalization setting as well.
+  // If needed for filtering, this flag will be added separately
+  INTERACTION_SUB_TYPE_TRANSCRIPTION_WITH_NORMALIZATION = 5 [deprecated = true];
  
   // Notes: enhanced, continous and normalized subtypes should be moved as separate flags
   // a combination for multiple flags combinations may be possible

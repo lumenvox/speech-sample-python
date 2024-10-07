@@ -464,6 +464,20 @@ message AudioConsumeSettings {
   OptionalInt32 audio_consume_max_ms = 5;
 }
 
+message TtsSettings {
+  // Voice mappings allow alternative voice names to map to LumenVox voices.
+  // The key is the language of the voice mappings.
+  map<string, VoiceMapping> voice_mappings = 1;
+}
+
+message VoiceMapping {
+  // A map of custom voice pairs.
+  // The key is the voice that will be requested by the API user.
+  // The value is the LumenVox voice that will be used for synthesis.
+  // Use the key "default" to set a default voice for the given language.
+  map<string, string> voicePairs = 2;
+}
+
 message TtsInlineSynthesisSettings {
   // Optional voice (if using simple text, or if not specified within SSML)
   OptionalString voice = 1;

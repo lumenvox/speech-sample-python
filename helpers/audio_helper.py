@@ -165,6 +165,7 @@ class AudioHandler:
 
         if chunk_audio:
             self.init_audio_buffer()  # Set audio data buffer.
+            self.audio_data = self.audio_data_buffer.audio_data
         else:
             self.init_full_audio_bytes()  # Set audio data.
 
@@ -233,6 +234,16 @@ class AudioHandler:
             session_stream=self.session_stream,
             audio_data=self.audio_data,
             correlation_id=self.correlation_id)
+
+    async def push_audio_chunk(self):
+        """
+        Push single audio chunk. Useful for cases like .WAV format audio where the first chunk needs to be pushed before
+        InteractionCreate.
+        """
+        await self.lumenvox_api_client.session_audio_push(
+            session_stream=self.session_stream,
+            correlation_id=self.correlation_id,
+            audio_data=self.audio_data[:self.audio_push_chunk_size_bytes])
 
     async def push_audio_chunks(self):
         """

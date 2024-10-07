@@ -322,9 +322,14 @@ by setting `enable_partial_results.value` to `True`, partial
 results can be received.
 
 ### Dialects
-The `transcription_dialect_example.py` uses the streaming transcription
+The `transcription_dialect_example.py` script uses the streaming transcription
 code to demonstrate the differences between results based on dialect (ex. 
 'en-us' vs. 'en-gb').
+
+### Continuous Transcription
+The `transcription_continuous.py` script uses the streaming transcription
+code to demonstrate continuous transcription, where partial results are
+returned.
 
 ## Enhanced Transcription Example
 

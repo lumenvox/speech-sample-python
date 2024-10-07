@@ -22,6 +22,8 @@ import uuid  # Provide UUID strings for the correlation ID.
 
 # Import protocol buffer messages from settings.
 import lumenvox.api.settings_pb2 as settings_msg
+# Import protocol buffer messages for audio formats.
+import lumenvox.api.audio_formats_pb2 as audio_formats_msg
 
 # LumenVox API handling code.
 import lumenvox_api_handler
@@ -74,6 +76,12 @@ async def asr_streaming(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiCli
 
     # For interactions that utilize user audio, it's required that the user provide the audio format.
     await asr_interaction_data.audio_handler.set_inbound_audio_format()
+
+    # If using a .WAV format audio, the first part of the audio containing the header needs to be sent before the
+    # interaction is created.
+    if asr_interaction_data.audio_handler.audio_format.standard_audio_format == \
+            audio_formats_msg.AudioFormat.StandardAudioFormat.STANDARD_AUDIO_FORMAT_WAV:
+        await asr_interaction_data.audio_handler.push_audio_chunk()
 
     ####### InteractionCreateASR #######
     # Create the ASR interaction using the variables and settings defined above.

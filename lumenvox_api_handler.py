@@ -227,7 +227,7 @@ class LumenVoxApiClient:
                             self.event_map[stream].partial_result_event.set()
                         elif response_type == 'final_result':
                             # put final result message into queue and set event
-                            print('>> task_read_session_streams: final_result\n', r)
+                            print('>> task_read_session_streams: final_result received')
                             self.queue_map[stream].result_queue.put_nowait(r.final_result)
                             self.event_map[stream].result_event.set()
                         else:
@@ -336,6 +336,15 @@ class LumenVoxApiClient:
             return None
 
         return await self.get_from_queue(aio_queue=self.queue_map[session_stream].general_response_queue, wait=wait)
+
+    async def get_session_partial_result(self, session_stream, wait: int = 3):
+        """
+        Retrieve the final result response of the given session stream if available; otherwise, return None.
+        """
+        if session_stream not in self.queue_map:
+            return None
+
+        return await self.get_from_queue(aio_queue=self.queue_map[session_stream].partial_result_queue, wait=wait)
 
     async def get_session_final_result(self, session_stream, wait: int = 3):
         """
@@ -833,8 +842,7 @@ class LumenVoxApiClient:
             embedded_grammars=embedded_grammars,
             language_model_name=common_helper.optional_string(language_model_name),
             acoustic_model_name=common_helper.optional_string(acoustic_model_name),
-            enable_postprocessing=common_helper.optional_string(enable_postprocessing)
-        )
+            enable_postprocessing=common_helper.optional_string(enable_postprocessing))
 
         interaction_request_msg = interaction_msg.InteractionRequestMessage(
             interaction_create_transcription=interaction_create_transcription_request)

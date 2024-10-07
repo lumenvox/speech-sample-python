@@ -1,6 +1,6 @@
 """
-Transcription with Dialects Sample
-This script will demonstrate the effects dialects can have on Transcription results.
+Transcription Sample with Audio Channel Selection
+This script will run through a session utilizing a Transcription interaction targeting specific audio channels.
 
 As this script utilizes a Transcription interaction, it pulls functionality and the interaction data container class
 from the transcription_sample.py script. Refer to that script for more information on Transcription interactions.
@@ -32,7 +32,7 @@ from lumenvox_api_handler import LumenVoxApiClient
 # Import AudioHandling code to assist with AudioPush sequences.
 from helpers.audio_helper import AudioHandler
 # Import the AudioFormat used in this file.
-from helpers.audio_helper import AUDIO_FORMAT_ULAW_8KHZ
+from helpers.audio_helper import AUDIO_FORMAT_WAV_8KHZ
 
 # This script will utilize the TranscriptionInteractionData class from the transcription_sample.py
 from transcription_sample import TranscriptionInteractionData
@@ -42,8 +42,8 @@ from transcription_sample import transcription
 
 def run_interactions(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiClient):
     """
-    This function will run two different transcription interactions; one interaction will use 'en-us' and the other will
-    use 'en-gb'. Take note of the differences in the results.
+    This function will run two different transcription interactions; one interaction will use the first channel,
+    the other will use the second channel. Take note of the differences in the results.
 
     :param lumenvox_api_client: Our class that interacts with the LumenVox API and wraps its gRPC functions.
     """
@@ -52,64 +52,75 @@ def run_interactions(lumenvox_api_client: lumenvox_api_handler.LumenVoxApiClient
     interaction_data_1 = TranscriptionInteractionData()
     interaction_data_2 = TranscriptionInteractionData()
 
+    language_code = 'en-us'
+
     # Audio chunk size value to use for both interactions.
     audio_chunk_size = 160
 
+    print_audio_push_messages = False
+
     # Define an audio format for ULAW 8kHz. See the audio_helper file referenced above for more information on the
     # data within these messages.
-    audio_format_msg = AUDIO_FORMAT_ULAW_8KHZ
+    audio_format_msg = AUDIO_FORMAT_WAV_8KHZ
 
-    # This audio file contains words that have different spellings for
-    # American English (en-us) or British English (en-gb).
-    audio_file_path = './sample_data/Audio/en/transcription/for_the_catalog_ulaw.raw'
+    # This is a WAV file containing a header. The first channel is "1 2 3 4". The second is "mouse".
+    audio_file_path = './sample_data/Audio/en/first_1234_second_mouse_ulaw.wav'
 
     # Settings for both interactions (see transcription_sample.py for more information).
-    audio_consume_settings = \
-        settings_helper.define_audio_consume_settings(
-            audio_consume_mode=settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_STREAMING,
-            stream_start_location=
-            settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
     recognition_settings = settings_helper.define_recognition_settings(enable_partial_results=False)
     vad_settings = settings_helper.define_vad_settings(use_vad=True)
 
-    # Set up data for the 'en-us' interaction.
-    interaction_data_1.language_code = 'en-us'
+    # AudioConsumeSettings for the first channel.
+    audio_consume_settings_1 = \
+        settings_helper.define_audio_consume_settings(
+            audio_channel=0,
+            audio_consume_mode=settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_STREAMING,
+            stream_start_location=
+            settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
+
+    # AudioConsumeSettings for the second channel.
+    audio_consume_settings_2 = \
+        settings_helper.define_audio_consume_settings(
+            audio_channel=1,
+            audio_consume_mode=settings_msg.AudioConsumeSettings.AudioConsumeMode.AUDIO_CONSUME_MODE_STREAMING,
+            stream_start_location=
+            settings_msg.AudioConsumeSettings.StreamStartLocation.STREAM_START_LOCATION_INTERACTION_CREATED)
+
+    # Set up data for the interaction using the first channel.
+    interaction_data_1.language_code = language_code
     interaction_data_1.audio_handler = (
         AudioHandler(
             audio_file_path=audio_file_path,
             audio_format=audio_format_msg,
             audio_push_chunk_size_bytes=audio_chunk_size,
             lumenvox_api_client=lumenvox_api_client))
-    interaction_data_1.audio_handler.print_audio_push_messages = False
-    interaction_data_1.audio_consume_settings = audio_consume_settings
+    interaction_data_1.audio_handler.print_audio_push_messages = print_audio_push_messages
+    interaction_data_1.audio_consume_settings = audio_consume_settings_1
     interaction_data_1.recognition_settings = recognition_settings
     interaction_data_1.vad_settings = vad_settings
 
-    # Set up data for the 'en-gb' interaction.
-    interaction_data_2.language_code = 'en-gb'
+    # Set up data for the interaction using the second channel.
+    interaction_data_2.language_code = language_code
     interaction_data_2.audio_handler = (
         AudioHandler(
             audio_file_path=audio_file_path,
             audio_format=audio_format_msg,
             audio_push_chunk_size_bytes=audio_chunk_size,
             lumenvox_api_client=lumenvox_api_client))
-    interaction_data_2.audio_handler.print_audio_push_messages = False
-    interaction_data_2.audio_consume_settings = audio_consume_settings
+    interaction_data_2.audio_handler.print_audio_push_messages = print_audio_push_messages
+    interaction_data_2.audio_consume_settings = audio_consume_settings_2
     interaction_data_2.recognition_settings = recognition_settings
     interaction_data_2.vad_settings = vad_settings
 
-    # The following two coroutines will run interactions providing slightly different results based on dialect.
-    # The final result output will contain a "transcript" field.
-
-    # The result this should provide is: "for the catalog we will organize the items based on color"
-    coroutine_en_us = (
+    # Should provide the result "1 2 3 4"
+    coroutine_first_channel = (
         transcription(lumenvox_api_client=lumenvox_api_client, transcription_interaction_data=interaction_data_1))
-    lumenvox_api_client.run_user_coroutine(coroutine_en_us)
+    lumenvox_api_client.run_user_coroutine(coroutine_first_channel)
 
-    # The result this should provide is: "for the catalogue we will organise the items based on colour"
-    coroutine_en_gb = (
+    # Should provide the result "mouse".
+    coroutine_second_channel = (
         transcription(lumenvox_api_client=lumenvox_api_client, transcription_interaction_data=interaction_data_2))
-    lumenvox_api_client.run_user_coroutine(coroutine_en_gb)
+    lumenvox_api_client.run_user_coroutine(coroutine_second_channel)
 
 
 if __name__ == '__main__':
@@ -117,5 +128,5 @@ if __name__ == '__main__':
     # user to run sessions as tasks along with other tasks to read responses from the API.
     lumenvox_api = LumenVoxApiClient()
 
-    # This function will run through two interactions showcasing the effect dialects may have on the transcript.
+    # This function will run through two interactions utilizing two different channels of the audio.
     run_interactions(lumenvox_api_client=lumenvox_api)

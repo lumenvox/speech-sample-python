@@ -243,4 +243,7 @@ message GlobalSettings {
 
   //Optional settings specifying boost options for phrases
   PhraseListSettings phrase_list_settings = 11 [deprecated = true];
+
+  // Optional settings for Text-To-Speech (TTS)
+  TtsSettings tts_settings = 12;
 }

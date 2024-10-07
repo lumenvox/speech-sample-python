@@ -106,6 +106,9 @@ message TranscriptionResult {
 
   // If VTT generation is enabled, the VTT file is added here.
   bytes vtt_file = 5;
+
+  // Optional blended quality transcription score
+  OptionalFloat blended_score = 6;
 }
 
 // Result returned from an AMD interaction.

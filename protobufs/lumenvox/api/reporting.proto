@@ -150,6 +150,12 @@ service ReportingAPIService {
   //
   rpc DiagnosticsCheck(DiagnosticsCheckRequest) 
       returns (DiagnosticsCheckResponse);
+  
+  //
+  // Performs fuzzy matching on machine and human transcribed texts
+  //
+  rpc EvaluateTranscription(EvaluateTranscriptionRequest)
+      returns (EvaluateTranscriptionResponse);
 }
 
 // ======== messages below  ===============================================
@@ -988,4 +994,25 @@ message DiagnosticsCheckRequest {
 message DiagnosticsCheckResponse {
   //Error message in case of errors or empty sting if the diagnostic check was successful
   string errorMessage = 1;
+}
+//
+// Describes the evaluate request
+//
+message EvaluateTranscriptionRequest {
+  // asr engine result
+  string machine_transcribed_text = 1;
+  // human trnascription
+  string human_transcribed_text = 2;
+}
+
+//
+// Describes the Evaluate response
+//
+message EvaluateTranscriptionResponse {
+  // match score
+  float match = 1;
+  // diffrences between machine and huma transcriptions
+  string error_text = 2;
+  // transcribed text with highlited diffrences using html tags
+  string html_text = 3;
 }
